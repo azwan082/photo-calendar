@@ -14,6 +14,7 @@ As a social media user,
 ## Tech stack
 
 - [Daun API](https://daun.me/api/v2/docs)
-- Vue / React (*not decided yet)
+- NuxtJS
 - MariaDB Galera
+- Redis
 - Docker & Kubernetes
