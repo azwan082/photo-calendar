@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina Calendar</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/dayjs.min.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['Cormorant Garamond', 'serif'],
+                        body: ['DM Sans', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --ink: #1a1612;
+            --cream: #f5f0e8;
+            --warm: #c8a97a;
+            --muted: #9a8c7e;
+            --glass: rgba(245, 240, 232, 0.08);
+            --glass-strong: rgba(245, 240, 232, 0.18);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--ink);
+            color: var(--cream);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── Scroll container ── */
+        #scroll-container {
+            height: 100vh;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+
+        #scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* ── Month page ── */
+        .month-page {
+            height: 100vh;
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ── Calendar grid ── */
+        .cal-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 1px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+
+
+        .cal-cell {
+            background: #201c18;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            transition: background 0.2s;
+        }
+
+        .cal-cell:hover {
+            background: #2a2520;
+        }
+
+        .cal-cell.empty {
+            background: #1a1612;
+            cursor: default;
+        }
+
+        .cal-cell.other-month {
+            opacity: 0.35;
+        }
+
+        .cal-cell img {
+            width: 100%;
+            height: 100%;
+            max-height: 15rem;
+            object-fit: cover;
+            display: block;
+            opacity: 0.72;
+            transition: opacity 0.3s;
+        }
+
+        .cal-cell:hover img {
+            opacity: 0.9;
+        }
+
+        .day-num {
+            position: absolute;
+            bottom: 6px;
+            left: 8px;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(18px, 2.5vw, 32px);
+            font-weight: 300;
+            line-height: 1;
+            color: var(--cream);
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+            z-index: 2;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        .cal-cell.no-photo .day-num {
+            color: var(--muted);
+            text-shadow: none;
+            mix-blend-mode: normal;
+            font-size: clamp(22px, 3vw, 40px);
+        }
+
+        .cal-cell.today .day-num {
+            color: var(--warm);
+        }
+
+        .today-dot {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--warm);
+            z-index: 2;
+        }
+
+        /* ── Fixed global header ── */
+        #fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            padding: 18px 24px 20px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            background: linear-gradient(to bottom, rgba(26, 22, 18, 0.88) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        #fixed-header>* {
+            pointer-events: auto;
+        }
+
+        #month-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(28px, 5vw, 56px);
+            font-weight: 300;
+            letter-spacing: 0.04em;
+            line-height: 1;
+            color: var(--cream);
+        }
+
+        #month-title em {
+            font-style: italic;
+            color: var(--warm);
+            font-weight: 300;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .username-text {
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        /* ── Menu ── */
+        .menu-btn {
+            width: 36px;
+            height: 36px;
+            background: var(--glass-strong);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: background 0.2s;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        .menu-btn span {
+            width: 14px;
+            height: 1px;
+            background: var(--cream);
+            display: block;
+        }
+
+        .dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 200px;
+            background: #2a2420;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            display: none;
+            z-index: 100;
+        }
+
+        .dropdown.open {
+            display: block;
+            animation: fadeDown 0.18s ease;
+        }
+
+        @keyframes fadeDown {
+            from {
+                opacity: 0;
+                transform: translateY(-6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        .dropdown-header {
+            padding: 14px 16px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .app-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            color: var(--warm);
+            letter-spacing: 0.06em;
+        }
+
+        .app-meta {
+            font-size: 10px;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+            margin-top: 2px;
+        }
+
+        .dropdown a {
+            display: block;
+            padding: 11px 16px;
+            font-size: 13px;
+            color: var(--cream);
+            text-decoration: none;
+            letter-spacing: 0.04em;
+            transition: background 0.15s;
+        }
+
+        .dropdown a:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .dropdown-sep {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .menu-wrap {
+            position: relative;
+        }
+
+        /* ── Lightbox ── */
+        #lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: none;
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(4px);
+            animation: lbIn 0.22s ease;
+        }
+
+        #lightbox.open {
+            display: flex;
+        }
+
+        @keyframes lbIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        #lb-inner {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            position: relative;
+        }
+
+        #lb-photo-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #lb-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 8px 60px rgba(0, 0, 0, 0.8);
+            transition: opacity 0.2s;
+        }
+
+        #lb-no-photo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 80px;
+            font-weight: 300;
+            color: rgba(245, 240, 232, 0.12);
+            letter-spacing: 0.1em;
+        }
+
+        .lb-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            background: var(--glass-strong);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+            transition: background 0.2s, opacity 0.2s;
+            color: var(--cream);
+            font-size: 18px;
+            z-index: 5;
+            user-select: none;
+        }
+
+        .lb-nav:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .lb-nav.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #lb-prev {
+            left: 16px;
+        }
+
+        #lb-next {
+            right: 16px;
+        }
+
+        #lb-close {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: 38px;
+            height: 38px;
+            background: var(--glass-strong);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--cream);
+            font-size: 18px;
+            z-index: 10;
+            backdrop-filter: blur(6px);
+            transition: background 0.2s;
+        }
+
+        #lb-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        #lb-counter {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        /* ── Info panel ── */
+        #lb-info {
+            width: 300px;
+            min-width: 260px;
+            background: #1e1a16;
+            border-left: 1px solid rgba(255, 255, 255, 0.07);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease, opacity 0.3s ease;
+            overflow: hidden;
+        }
+
+        #lb-info.collapsed {
+            width: 0;
+            min-width: 0;
+            opacity: 0;
+            border-left: none;
+        }
+
+        #lb-info-content {
+            padding: 24px 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        #lb-info-content::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        #lb-info-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+        }
+
+        .info-date {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            font-weight: 300;
+            color: var(--warm);
+            margin-bottom: 6px;
+        }
+
+        .info-timestamp {
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+            margin-bottom: 20px;
+        }
+
+        .info-desc {
+            font-size: 14px;
+            color: rgba(245, 240, 232, 0.75);
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .info-source {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            color: var(--warm);
+            text-decoration: none;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(200, 169, 122, 0.3);
+            padding-bottom: 2px;
+            transition: color 0.2s;
+        }
+
+        .info-source:hover {
+            color: var(--cream);
+        }
+
+        #lb-toggle-info {
+            position: absolute;
+            right: 16px;
+            top: 16px;
+            width: 38px;
+            height: 38px;
+            background: var(--glass-strong);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--cream);
+            font-size: 14px;
+            z-index: 10;
+            backdrop-filter: blur(6px);
+            transition: background 0.2s;
+        }
+
+        #lb-toggle-info:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ── Scroll hint ── */
+        .scroll-hint {
+            position: fixed;
+            bottom: 20px;
+            right: 24px;
+            font-size: 10px;
+            letter-spacing: 0.16em;
+            color: rgba(154, 140, 126, 0.4);
+            text-transform: uppercase;
+            pointer-events: none;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .scroll-hint-arrow {
+            animation: bounce 1.8s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(4px)
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Fixed header -->
+    <div id="fixed-header">
+        <div id="month-title"></div>
+        <div class="header-right">
+            <span class="username-text" id="header-username"></span>
+            <div class="menu-wrap">
+                <div class="menu-btn" onclick="toggleMenu(this)">
+                    <span></span><span></span><span></span>
+                </div>
+                <div class="dropdown">
+                    <div class="dropdown-header">
+                        <div class="app-name" id="header-appname"></div>
+                        <div class="app-meta" id="header-appmeta"></div>
+                    </div>
+                    <a href="#">⚙ Settings</a>
+                    <a href="#">◉ Account</a>
+                    <div class="dropdown-sep"></div>
+                    <a href="#" style="color:#c07070;">⏻ Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scroll container (months) -->
+    <div id="scroll-container"></div>
+
+    <!-- Lightbox -->
+    <div id="lightbox">
+        <div id="lb-inner">
+            <div id="lb-photo-area">
+                <div id="lb-close" onclick="closeLightbox()">✕</div>
+                <div id="lb-toggle-info" onclick="toggleInfo()" title="Toggle info panel">⬡</div>
+                <div class="lb-nav" id="lb-prev" onclick="lbNavigate(-1)">‹</div>
+                <img id="lb-img" src="" alt="" style="display:none">
+                <div id="lb-no-photo"></div>
+                <div class="lb-nav" id="lb-next" onclick="lbNavigate(1)">›</div>
+                <div id="lb-counter"></div>
+            </div>
+            <div id="lb-info">
+                <div id="lb-info-content">
+                    <div class="info-date" id="info-date"></div>
+                    <div class="info-timestamp" id="info-timestamp"></div>
+                    <div class="info-desc" id="info-desc"></div>
+                    <a href="#" class="info-source" id="info-source" target="_blank">↗ View Source</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scroll hint -->
+    <div class="scroll-hint">
+        <span class="scroll-hint-arrow">↓</span>
+        <span>scroll</span>
+    </div>
+
+    <script>
+        // ── Sample data ──
+        const PHOTOS = {
+            '2026-02-01': [
+                { src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80', desc: 'Alpine sunrise over snow-capped peaks. The golden hour painted the whole range in amber.', timestamp: '2026-02-01 07:14', source: 'https://unsplash.com' }
+            ],
+            '2026-02-03': [
+                { src: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&q=80', desc: 'Ancient forest path on a misty morning. Silence broken only by distant birds.', timestamp: '2026-02-03 09:33', source: 'https://unsplash.com' },
+                { src: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200&q=80', desc: 'Second frame from the forest walk — the light breaking through.', timestamp: '2026-02-03 10:01', source: 'https://unsplash.com' }
+            ],
+            '2026-02-07': [
+                { src: 'https://images.unsplash.com/photo-1770941550709-a555ac4a69b3?w=1200&q=80', desc: 'Portrait study — natural window light, mid-morning.', timestamp: '2026-02-07 11:20', source: 'https://unsplash.com' }
+            ],
+            '2026-02-10': [
+                { src: 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?w=1200&q=80', desc: 'Ocean at dusk. The tide was unusually calm — glassy and still.', timestamp: '2026-02-10 18:45', source: 'https://unsplash.com' }
+            ],
+            '2026-02-14': [
+                { src: 'https://images.unsplash.com/photo-1518621736915-f3b1c41bfd00?w=1200&q=80', desc: "Valentine's Day — red flowers at the market downtown.", timestamp: '2026-02-14 12:00', source: 'https://unsplash.com' }
+            ],
+            '2026-02-17': [
+                { src: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&q=80', desc: 'Travel day. Somewhere above the clouds between cities.', timestamp: '2026-02-17 15:30', source: 'https://unsplash.com' }
+            ],
+            '2026-02-20': [
+                { src: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1200&q=80', desc: 'Desert landscape at golden hour. Stillness.', timestamp: '2026-02-20 17:02', source: 'https://unsplash.com' },
+                { src: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=1200&q=80', desc: 'The dunes at last light — shadows growing long.', timestamp: '2026-02-20 17:48', source: 'https://unsplash.com' },
+                { src: 'https://images.unsplash.com/photo-1478827536114-da961b7f86d2?w=1200&q=80', desc: 'Camp fire after sunset. The night turned cold quickly.', timestamp: '2026-02-20 20:15', source: 'https://unsplash.com' }
+            ],
+            '2026-02-23': [
+                { src: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=1200&q=80', desc: 'City fog rolling through the valley at dawn.', timestamp: '2026-02-23 06:55', source: 'https://unsplash.com' }
+            ],
+            '2026-02-26': [
+                { src: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&q=80', desc: 'Mountain lake — mirror-flat water reflecting the peaks perfectly.', timestamp: '2026-02-26 13:10', source: 'https://unsplash.com' }
+            ],
+            '2026-01-15': [
+                { src: 'https://images.unsplash.com/photo-1485470733090-0aae1788d5af?w=1200&q=80', desc: 'Winter city — long shadows, bare trees.', timestamp: '2026-01-15 14:00', source: 'https://unsplash.com' }
+            ],
+            '2026-03-05': [
+                { src: 'https://images.unsplash.com/photo-1771385706186-52d203076e01?w=1200&q=80', desc: 'First flowers of spring appeared unexpectedly early.', timestamp: '2026-03-05 10:20', source: 'https://unsplash.com' }
+            ]
+        };
+
+        const USERNAME = 'azwan082';
+        const APP_NAME = 'photo-calendar';
+        const APP_VERSION = '0.1.0';
+
+        // ── State ──
+        let currentMonth = dayjs('2026-02-01');
+        const MONTHS_TO_RENDER = 5; // center ± 2
+        const CENTER_INDEX = 2;
+        let infoVisible = true;
+        let lbPhotos = [];
+        let lbIndex = 0;
+
+        // ── Build months ──
+        function getMonths() {
+            return Array.from({ length: MONTHS_TO_RENDER }, (_, i) =>
+                currentMonth.subtract(CENTER_INDEX - i, 'month')
+            );
+        }
+
+        function renderCalendar() {
+            const container = document.getElementById('scroll-container');
+            container.innerHTML = '';
+            getMonths().forEach((month) => {
+                container.appendChild(buildMonthPage(month));
+            });
+            requestAnimationFrame(() => {
+                const pages = container.querySelectorAll('.month-page');
+                pages[CENTER_INDEX].scrollIntoView({ behavior: 'instant' });
+                setHeaderMonth(currentMonth);
+            });
+        }
+
+        function buildMonthPage(month) {
+            const page = document.createElement('div');
+            page.className = 'month-page';
+            page.dataset.month = month.format('YYYY-MM');
+
+            // Grid
+            const grid = document.createElement('div');
+            grid.className = 'cal-grid';
+
+            const firstDay = month.startOf('month').day(); // 0=Sun
+            const daysInMonth = month.daysInMonth();
+            const today = dayjs().format('YYYY-MM-DD');
+
+            // Fill grid cells: 6 rows × 7 = 42
+            for (let i = 0; i < 42; i++) {
+                const dayNum = i - firstDay + 1;
+                const cell = document.createElement('div');
+
+                if (dayNum < 1 || dayNum > daysInMonth) {
+                    // Other month cells (faded)
+                    let otherDate, otherNum;
+                    if (dayNum < 1) {
+                        const prevMonth = month.subtract(1, 'month');
+                        otherNum = prevMonth.daysInMonth() + dayNum;
+                        otherDate = prevMonth.date(otherNum).format('YYYY-MM-DD');
+                    } else {
+                        const nextMonth = month.add(1, 'month');
+                        otherNum = dayNum - daysInMonth;
+                        otherDate = nextMonth.date(otherNum).format('YYYY-MM-DD');
+                    }
+                    const photos = PHOTOS[otherDate];
+                    cell.className = 'cal-cell other-month' + (photos ? '' : ' no-photo');
+                    if (photos) {
+                        const img = document.createElement('img');
+                        img.src = photos[0].src;
+                        img.loading = 'lazy';
+                        cell.appendChild(img);
+                    }
+                    const dn = document.createElement('div');
+                    dn.className = 'day-num';
+                    dn.textContent = dayNum < 1 ? month.subtract(1, 'month').daysInMonth() + dayNum : dayNum - daysInMonth;
+                    cell.appendChild(dn);
+                    // no click on other-month
+                } else {
+                    const dateStr = month.date(dayNum).format('YYYY-MM-DD');
+                    const photos = PHOTOS[dateStr];
+                    const isToday = dateStr === today;
+
+                    cell.className = 'cal-cell' + (photos ? '' : ' no-photo') + (isToday ? ' today' : '');
+
+                    if (photos) {
+                        const img = document.createElement('img');
+                        img.src = photos[0].src;
+                        img.loading = 'lazy';
+                        cell.appendChild(img);
+                        cell.addEventListener('click', () => openLightbox(dateStr));
+                    } else {
+                        cell.addEventListener('click', () => openLightbox(dateStr));
+                    }
+
+                    if (isToday) {
+                        const dot = document.createElement('div');
+                        dot.className = 'today-dot';
+                        cell.appendChild(dot);
+                    }
+
+                    const dn = document.createElement('div');
+                    dn.className = 'day-num';
+                    dn.textContent = dayNum;
+                    cell.appendChild(dn);
+                }
+
+                grid.appendChild(cell);
+            }
+
+            page.appendChild(grid);
+            return page;
+        }
+
+        // ── Menu toggle ──
+        function toggleMenu(btn) {
+            const dd = btn.nextElementSibling;
+            dd.classList.toggle('open');
+            // close others
+            document.querySelectorAll('.dropdown.open').forEach(d => {
+                if (d !== dd) d.classList.remove('open');
+            });
+        }
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.menu-wrap')) {
+                document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+            }
+        });
+
+        // ── Fixed header ──
+        function initHeader() {
+            document.getElementById('header-username').textContent = USERNAME;
+            document.getElementById('header-appname').textContent = APP_NAME;
+            document.getElementById('header-appmeta').textContent = `© ${new Date().getFullYear()} · v${APP_VERSION}`;
+        }
+
+        function setHeaderMonth(month) {
+            document.getElementById('month-title').innerHTML =
+                `<em>${month.format('MMMM')}</em> ${month.format('YYYY')}`;
+        }
+
+        // ── Scroll → update month ──
+        const scrollContainer = document.getElementById('scroll-container');
+        let scrollTimeout;
+
+        scrollContainer.addEventListener('scroll', () => {
+            const st = scrollContainer.scrollTop;
+            const ch = scrollContainer.clientHeight;
+            const idx = Math.round(st / ch);
+            const months = getMonths();
+            if (months[idx]) setHeaderMonth(months[idx]);
+
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                const idx2 = Math.round(scrollContainer.scrollTop / scrollContainer.clientHeight);
+                if (idx2 !== CENTER_INDEX) {
+                    currentMonth = currentMonth.add(idx2 - CENTER_INDEX, 'month');
+                    renderCalendar();
+                }
+            }, 80);
+        });
+
+        // ── Lightbox ──
+        function openLightbox(dateStr) {
+            const photos = PHOTOS[dateStr] || [];
+            lbPhotos = photos;
+            lbIndex = 0;
+
+            const day = dayjs(dateStr);
+            document.getElementById('info-date').textContent = day.format('MMMM D, YYYY');
+
+            renderLbPhoto();
+            document.getElementById('lightbox').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function renderLbPhoto() {
+            const img = document.getElementById('lb-img');
+            const noPhoto = document.getElementById('lb-no-photo');
+            const counter = document.getElementById('lb-counter');
+            const prevBtn = document.getElementById('lb-prev');
+            const nextBtn = document.getElementById('lb-next');
+
+            if (lbPhotos.length === 0) {
+                img.style.display = 'none';
+                noPhoto.textContent = 'No Photo';
+                noPhoto.style.display = 'block';
+                document.getElementById('info-timestamp').textContent = '';
+                document.getElementById('info-desc').textContent = 'No photos for this day.';
+                document.getElementById('info-source').style.display = 'none';
+                counter.textContent = '';
+                prevBtn.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+                return;
+            }
+
+            const p = lbPhotos[lbIndex];
+            img.style.opacity = 0;
+            img.style.display = 'block';
+            noPhoto.style.display = 'none';
+            img.src = p.src;
+            img.onload = () => { img.style.opacity = 1; };
+
+            document.getElementById('info-timestamp').textContent = p.timestamp;
+            document.getElementById('info-desc').textContent = p.desc;
+            const srcEl = document.getElementById('info-source');
+            srcEl.href = p.source;
+            srcEl.style.display = 'inline-flex';
+
+            counter.textContent = lbPhotos.length > 1 ? `${lbIndex + 1} / ${lbPhotos.length}` : '';
+            prevBtn.classList.toggle('hidden', lbIndex === 0);
+            nextBtn.classList.toggle('hidden', lbIndex === lbPhotos.length - 1);
+        }
+
+        function lbNavigate(dir) {
+            lbIndex = Math.max(0, Math.min(lbPhotos.length - 1, lbIndex + dir));
+            renderLbPhoto();
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        function toggleInfo() {
+            infoVisible = !infoVisible;
+            document.getElementById('lb-info').classList.toggle('collapsed', !infoVisible);
+        }
+
+        // Keyboard nav
+        document.addEventListener('keydown', e => {
+            if (!document.getElementById('lightbox').classList.contains('open')) return;
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowLeft') lbNavigate(-1);
+            if (e.key === 'ArrowRight') lbNavigate(1);
+        });
+
+        // ── Init ──
+        initHeader();
+        renderCalendar();
+    </script>
+</body>
+
+</html>
