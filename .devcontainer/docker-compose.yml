@@ -1,0 +1,105 @@
+services:
+  workspace:
+    image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
+    volumes:
+      - ..:/workspaces/photo-calendar:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sleep infinity
+    depends_on:
+      - mariadb
+      - redis
+
+  mariadb:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: photo_calendar
+      MYSQL_USER: photo_calendar
+      MYSQL_PASSWORD: photo_calendar
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+
+  web-dev:
+    image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
+    profiles: ["dev"]
+    working_dir: /workspaces/photo-calendar/web
+    volumes:
+      - ..:/workspaces/photo-calendar:cached
+    command: /bin/bash -lc "npm install && npm run dev -- --host 0.0.0.0 --port 3000"
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_USER: photo_calendar
+      DB_PASSWORD: photo_calendar
+      DB_NAME: photo_calendar
+    depends_on:
+      - mariadb
+    ports:
+      - "3000:3000"
+
+  worker-dev:
+    image: oven/bun:1.2.23
+    profiles: ["dev"]
+    working_dir: /workspaces/photo-calendar/worker
+    volumes:
+      - ..:/workspaces/photo-calendar:cached
+    command: /bin/sh -lc "bun install && bun run dev"
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      SYNC_INTERVAL_SECONDS: "1800"
+      QUEUE_PREFIX: photo-calendar
+    depends_on:
+      - redis
+
+  web-prod:
+    image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
+    profiles: ["prod"]
+    working_dir: /workspaces/photo-calendar/web
+    volumes:
+      - ..:/workspaces/photo-calendar:cached
+    command: /bin/bash -lc "npm install && npm run build && npm run preview -- --host 0.0.0.0 --port 3000"
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_USER: photo_calendar
+      DB_PASSWORD: photo_calendar
+      DB_NAME: photo_calendar
+    depends_on:
+      - mariadb
+    ports:
+      - "3000:3000"
+
+  worker-prod:
+    image: oven/bun:1.2.23
+    profiles: ["prod"]
+    working_dir: /workspaces/photo-calendar/worker
+    volumes:
+      - ..:/workspaces/photo-calendar:cached
+    command: /bin/sh -lc "bun install && bun run start"
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      SYNC_INTERVAL_SECONDS: "1800"
+      QUEUE_PREFIX: photo-calendar
+    depends_on:
+      - redis
+
+volumes:
+  mariadb-data:
+  redis-data:

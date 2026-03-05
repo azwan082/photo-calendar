@@ -1,0 +1,83 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "stack:dev",
+      "type": "shell",
+      "command": "docker compose -f .devcontainer/docker-compose.yml --profile dev up -d web-dev worker-dev",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "stack:dev:logs",
+      "type": "shell",
+      "command": "docker compose -f .devcontainer/docker-compose.yml --profile dev logs -f web-dev worker-dev",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "ready|Local:"
+        }
+      }
+    },
+    {
+      "label": "stack:dev:down",
+      "type": "shell",
+      "command": "docker compose -f .devcontainer/docker-compose.yml --profile dev down",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "stack:prod",
+      "type": "shell",
+      "command": "docker compose -f .devcontainer/docker-compose.yml --profile prod up -d web-prod worker-prod",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "stack:prod:logs",
+      "type": "shell",
+      "command": "docker compose -f .devcontainer/docker-compose.yml --profile prod logs -f web-prod worker-prod",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "ready|Local:"
+        }
+      }
+    },
+    {
+      "label": "stack:prod:down",
+      "type": "shell",
+      "command": "docker compose -f .devcontainer/docker-compose.yml --profile prod down",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

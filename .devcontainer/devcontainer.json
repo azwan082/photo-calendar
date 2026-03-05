@@ -1,0 +1,29 @@
+{
+  "name": "photo-calendar",
+  "dockerComposeFile": [
+    "docker-compose.yml"
+  ],
+  "service": "workspace",
+  "workspaceFolder": "/workspaces/photo-calendar",
+  "runServices": [
+    "workspace",
+    "mariadb",
+    "redis"
+  ],
+  "shutdownAction": "stopCompose",
+  "forwardPorts": [
+    3000,
+    3306,
+    6379
+  ],
+  "postCreateCommand": "cd web && npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Vue.volar",
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  }
+}
