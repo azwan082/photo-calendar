@@ -2,80 +2,38 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "stack:dev",
+      "label": "run:dev:web",
       "type": "shell",
-      "command": "docker compose -f .devcontainer/docker-compose.yml --profile dev up -d web-dev worker-dev",
+      "command": "npm run dev -- --host 0.0.0.0 --port 3000",
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}/web"
       },
       "problemMatcher": []
     },
     {
-      "label": "stack:dev:logs",
+      "label": "run:dev:worker",
       "type": "shell",
-      "command": "docker compose -f .devcontainer/docker-compose.yml --profile dev logs -f web-dev worker-dev",
+      "command": "bun run dev",
       "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "isBackground": true,
-      "problemMatcher": {
-        "owner": "custom",
-        "pattern": {
-          "regexp": "^(.*)$",
-          "message": 1
-        },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": ".",
-          "endsPattern": "ready|Local:"
-        }
-      }
-    },
-    {
-      "label": "stack:dev:down",
-      "type": "shell",
-      "command": "docker compose -f .devcontainer/docker-compose.yml --profile dev down",
-      "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}/worker"
       },
       "problemMatcher": []
     },
     {
-      "label": "stack:prod",
+      "label": "run:prod:web",
       "type": "shell",
-      "command": "docker compose -f .devcontainer/docker-compose.yml --profile prod up -d web-prod worker-prod",
+      "command": "npm run preview -- --host 0.0.0.0 --port 3000",
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}/web"
       },
       "problemMatcher": []
     },
     {
-      "label": "stack:prod:logs",
+      "label": "run:prod:worker",
       "type": "shell",
-      "command": "docker compose -f .devcontainer/docker-compose.yml --profile prod logs -f web-prod worker-prod",
+      "command": "bun run start",
       "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "isBackground": true,
-      "problemMatcher": {
-        "owner": "custom",
-        "pattern": {
-          "regexp": "^(.*)$",
-          "message": 1
-        },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": ".",
-          "endsPattern": "ready|Local:"
-        }
-      }
-    },
-    {
-      "label": "stack:prod:down",
-      "type": "shell",
-      "command": "docker compose -f .devcontainer/docker-compose.yml --profile prod down",
-      "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}/worker"
       },
       "problemMatcher": []
     }
