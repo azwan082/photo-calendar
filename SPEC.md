@@ -123,18 +123,18 @@ Deployment_Node(k8s, "Cluster", "K8s") {
 
 ```mermaid
 erDiagram
-    USER {
+    user {
         int id PK
         string email
-        string display_name
-        enum auth_type  "sso | local"
         string username
+        enum auth_type  "sso | local"        
         text password_hash
         boolean is_superadmin
+        boolean is_sync_locked
         datetime created_at
     }
 
-    SOCIAL_ACCOUNT {
+    social_account {
         int id PK
         int user_id FK
         string provider
@@ -144,7 +144,7 @@ erDiagram
         datetime expires_at
     }
 
-    POST {
+    post {
         int id PK
         int user_id FK
         int account_id FK
@@ -154,7 +154,7 @@ erDiagram
         datetime synced_at
     }
 
-    MEDIA {
+    media {
         int id PK
         int post_id FK
         text media_url
@@ -163,7 +163,7 @@ erDiagram
         int height
     }
 
-    SYNC_LOG {
+    sync_log {
         int id PK
         int account_id FK
         datetime started_at
@@ -172,7 +172,7 @@ erDiagram
         text message
     }
 
-    APP_SETTINGS {
+    app_settings {
         int id PK
         string key UK
         text value 
@@ -181,11 +181,11 @@ erDiagram
     }
 
     %% Relationships
-    USER ||--o{ SOCIAL_ACCOUNT : "has one or more"
-    SOCIAL_ACCOUNT ||--o{ POST : "owns posts"
-    POST ||--o{ MEDIA : "has one or more"
-    SOCIAL_ACCOUNT ||--o{ SYNC_LOG : "sync logs"
-    USER ||--o{ POST : "author"
+    user ||--o{ social_account : "has one or more"
+    social_account ||--o{ post : "owns posts"
+    post ||--o{ media : "has one or more"
+    social_account ||--o{ sync_log : "sync logs"
+    user ||--o{ post : "author"
 ```
 
 ## REST API Endpoints
@@ -197,7 +197,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li>`provider` (query, required) → e.g. "google", "azuread", "keycloak" <li>`redirect_uri` (query, optional override) <li>`state` (query, generated server-side) |
-| Output     | Redirect to IdP authorization endpoint |
+| Output     | <pre>{<br>  "redirect_url": "[IdP authorization endpoint]"<br>} |
 | HTTP Codes | `302` (success redirect) <br> `400` (invalid request) |
 
 `/api/auth/callback` (GET)
@@ -205,7 +205,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `provider` (query, required) <li> `code` (query, required) <li> `state` (query, required) |
-| Output     | <pre>{ "access_token": "string", "id_token": "string", "refresh_token": "string", "expires_in": 3600 }</pre> |
+| Output     | <pre>{<br>  "access_token": "string",<br>  "id_token": "string",<br>  "refresh_token": "string",<br>  "expires_in": 3600<br>}</pre> |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (token exchange failed) |
 
 `/api/auth/token` (POST)
@@ -221,7 +221,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `provider` (body, required) <li> `refresh_token` (required) |
-| Output     | <pre> { "access_token": "string", "expires_in": 3600 } |
+| Output     | <pre>{<br>  "access_token": "string",<br>  "expires_in": 3600<br>} |
 | HTTP Codes | `200` (success) <br> `401` (invalid/expired refresh token) |
 
 `/api/auth/logout` (GET, POST)
@@ -229,7 +229,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `provider` (query or body, required) <li> `id_token_hint` (optional) |
-| Output     | <pre> { "message": "Logged out" } |
+| Output     | <pre>{<br>  "message": "Logged out"<br>} |
 | HTTP Codes | `200` (success), `400` (invalid request) |
 
 `/api/auth/userinfo` (GET)
@@ -237,7 +237,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `Authorization: Bearer` (header, required) <li> `provider` (query, optional — backend can auto‑detect from `iss` claim in token) |
-| Output     | <pre> { "sub": "user-id", "name": "Full Name", "email": "user@example.com", "roles": ["admin","user"] } |
+| Output     | <pre>{<br>  "sub": "user-id",<br>  "name": "John Doe",<br>  "email": "johndoe@example.com",<br>  "roles": ["admin", "user"]<br>} |
 | HTTP Codes | `200` (success) <br> `401` (invalid/expired token) |
 
 ### Session & Token Management
@@ -247,7 +247,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `Authorization: Bearer` (header, required) <li> `provider` (query, optional — backend can auto‑detect from `iss`) |
-| Output     | <pre> { "user": { "id": "123", "name": "Azwan" }, "expires_at": "2026-02-23T07:22:00Z" } |
+| Output     | <pre>{<br>  "user": {<br>    "id": "123",<br>    "username": "johndoe",<br>    "email": "johndoe@example.com",<br>    "is_superadmin": false<br>  },<br>  "expires_at": "2026-02-23T07:22:00Z"<br>} |
 | HTTP Codes | `200` (success) <br> `401` (no active session) |
 
 `/api/session/validate` (POST)
@@ -255,7 +255,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `token` (body, required) <li> `provider` (body, optional — backend can auto‑detect from `iss`) |
-| Output     | <pre> { "valid": true, "claims": { "sub": "123", "exp": 1670000000 } } |
+| Output     | <pre>{<br>  "valid": true,<br>  "claims": {<br>    "sub": "123",<br>    "exp": 1670000000<br>  }<br>} |
 | HTTP Codes | `200` (success) <br> `401` (invalid token) |
 
 `/api/session/revoke` (GET)
@@ -263,8 +263,42 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `token` (body, required) <li> `provider` (body, optional — backend can auto‑detect from `iss`) |
-| Output     | <pre> { "message": "Token revoked" } |
+| Output     | <pre>{<br>  "message": "Token revoked"<br>} |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) |
+
+### Users
+
+`/api/users/` (GET)
+
+| Aspect     | Details |
+| ---------- | ------- |
+| Parameters | <li> `Authorization: Bearer` (header, required) <li> `page` (int, optional) → pagination page number <li> `limit` (int, optional) → number of posts per page <li> `filter` (JSON string, optional)  → filter by this column: <pre>{<br>  "$column": {<br>    "value": "", // required if min & max below not specified & vice versa<br>    "cmp": "eq/lt/gt", // default: eq<br>    "min": "",<br>    "max": ""<br>  }<br>}</pre> `$column`: email, username, is_superadmin, is_sync_locked <li> `sort` (string, optional: asc/desc, default: desc) <li> `sort_by` (string, optional, default: id) → sort by this column |
+| Output     | <pre>{ <br>  "page": 1,<br>  "limit": 10,<br>  "total": 125,<br>  "users": [<br>    {<br>      "id": 101,<br>      "email": "johndoe@example.com",<br>      "username": "johndoe",<br>      "auth_type": "sso",<br>      "is_superadmin": false,<br>      "is_sync_locked": false,<br>      "created_at": "2026-02-20T18:30:00Z",<br>    }<br>  ]<br>} |
+| HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (no users found) <br> `500` (internal server error) |
+
+`/api/users/{id}` (GET)
+
+| Aspect     | Details |
+| ---------- | ------- |
+| Parameters | <li> `Authorization: Bearer` (header, required) <li> `id` (int) → Unique identifier of the post |
+| Output     | <pre>{<br>  "id": 101,<br>  "email": "johndoe@example.com",<br>  "username": "johndoe",<br>  "auth_type": "sso",<br>  "is_superadmin": false,<br>  "is_sync_locked": false,<br>  "created_at": "2026-02-20T18:30:00Z",<br>} |
+| HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (no users found) <br> `500` (internal server error) |
+
+`/api/users/{id}` (PUT)
+
+| Aspect     | Details |
+| ---------- | ------- |
+| Parameters | <li> `Authorization: Bearer` (header, required) <li> `id` (query, required) → user ID <li> JSON Body: <pre>{<br>  "username": "johndoe",<br>  "is_sync_locked": true<br>} |
+| Output | <pre>{<br>  "id": 101,<br>  "email": "johndoe@example.com",<br>  "username": "johndoe",<br>  "auth_type": "sso",<br>  "is_superadmin": false,<br>  "is_sync_locked": false,<br>  "created_at": "2026-02-20T18:30:00Z",<br>} |
+| HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (not found) <br> `500` (internal server error) |
+
+`/api/users/{id}` (DELETE)
+
+| Aspect     | Details |
+| ---------- | ------- |
+| Parameters | <li> `Authorization: Bearer` (header, required) <li> `id` (query, required) → user ID |
+| Output     | <pre>{<br>  "message": "User 'johndoe@example.com' deleted successfully." <br>} |
+| HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (not found) <br> `500` (internal server error) |
 
 ### Posts
 
@@ -273,7 +307,7 @@ erDiagram
 
 | Aspect     | Details |
 | ---------- | ------- |
-| Parameters | <li> `Authorization: Bearer` (header, required) <li> `page` (int, optional) → pagination page number <li> `limit` (int, optional) → number of posts per page <li> `from_timestamp` (datetime, optional) → filter posts newer than this timestamp <li> `to_timestamp` (datetime, optional) → filter posts older than this timestamp <li> `sort` (string, optional: asc|desc) → sort by timestamp |
+| Parameters | <li> `Authorization: Bearer` (header, required) <li> `page` (int, optional) → pagination page number <li> `limit` (int, optional) → number of posts per page <li> `from_timestamp` (datetime, optional) → filter posts newer than this timestamp <li> `to_timestamp` (datetime, optional) → filter posts older than this timestamp <li> `sort` (string, optional: asc/desc, default: desc) <li> `sort_by` (string, optional, default: id) → sort by this column |
 | Output     | <pre>{ <br>  "page": 1,<br>  "limit": 10,<br>  "total": 125,<br>  "posts": [<br>    {<br>      "id": 101,<br>      "external_post_id": "fb_12345",<br>      "caption": "Sunset view!",<br>      "timestamp": "2026-02-20T18:30:00",<br>      "account_id": 5,<br>      "media": [<br>        {<br>          "id": 501,<br>          "media_url": "https://cdn.app/photos/sunset.jpg",<br>          "media_type": "photo",<br>          "width": 1080,<br>          "height": 720<br>        }<br>      ]<br>    }<br>  ]<br>} |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (no posts found) <br> `500` (internal server error) |
 
@@ -300,7 +334,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `Authorization: Bearer` (header, required) <li> `key` (query, required) → app setting key |
-| Output     | <pre>{ "key": "sync_interval_minutes", "value": "30", "description": "Interval for background sync jobs", "updated_at": "2026-02-22T10:00:00Z" } |
+| Output     | <pre>{<br>  "key": "sync_interval_minutes",<br>  "value": "30",<br>  "description": "Interval for background sync jobs",<br>  "updated_at": "2026-02-22T10:00:00Z" <br>} |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (not found) <br> `500` (internal server error) |
 
 `/api/settings` (POST)
@@ -308,7 +342,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `Authorization: Bearer` (header, required) <li> JSON body: <pre>{<br>  "key": "max_upload_size_mb",<br>  "value": "50",<br>  "description": "Maximum media upload size" <br>} |
-| Output     | <pre> { "key": "max_upload_size_mb", "value": "50", "description": "Maximum media upload size", "updated_at": "2026-02-23T07:30:00Z" } |
+| Output     | <pre>{<br>  "key": "max_upload_size_mb",<br>  "value": "50",<br>  "description": "Maximum media upload size",<br>  "updated_at": "2026-02-23T07:30:00Z"<br>} |
 | HTTP Codes | `201` (created) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `500` (internal server error) |
 
 `/api/settings/{key}` (PUT)
@@ -326,3 +360,22 @@ erDiagram
 | Parameters | <li> `Authorization: Bearer` (header, required) <li> `key` (query, required) → app setting key |
 | Output     | <pre> { "message": "Setting 'sync_interval_minutes' deleted successfully." } |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (not found) <br> `500` (internal server error) |
+
+## Worker Tasks
+
+- worker component is implemented using BullMQ library, with redis as message broker
+- it receives tasks from 'web' component via redis, and return output via REST API back to 'web'
+- worker component has 2 roles: runner & scheduler. 
+  - scheduler: handle scheduling of tasks
+  - runner: run the task
+- both subcomponent use same code base inside 'worker' folder, and started using specific flag
+
+### Content Syncer
+
+- triggered via scheduled cron job, run every 2 minutes
+- purpose: sync users' social media API photos metadata
+- algorithm:
+  - sort non-superadmin, unlocked users by last sync datetime, sort oldest first or never sync first, get top 5 users, then lock the user for sync process
+  - perform request to social media API & update photos data via REST API to web component
+  - auto retry with graceful backoff in case of failure, retry max 3 times
+  - when finish, regardless success or failed, unlock users
