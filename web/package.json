@@ -1,0 +1,38 @@
+{
+  "name": "photo-calendar",
+  "type": "module",
+  "private": true,
+  "packageManager": "npm@11.11.0",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "migration:create": "npm run typeorm -- migration:create server/database/migrations/NewMigration",
+    "migration:generate": "npm run typeorm -- migration:generate server/database/migrations/GeneratedMigration",
+    "migration:revert": "npm run typeorm -- migration:revert",
+    "migration:run": "npm run typeorm -- migration:run",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "typeorm": "typeorm-ts-node-esm -d server/database/data-source.ts"
+  },
+  "dependencies": {
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "mysql2": "^3.19.0",
+    "nuxt": "^4.3.1",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.28",
+    "typeorm-naming-strategies": "^4.1.0",
+    "vue": "^3.5.29",
+    "vue-router": "^5.0.3"
+  },
+  "devDependencies": {
+    "@nuxt/test-utils": "^4.0.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "happy-dom": "^20.8.3",
+    "sqlite3": "^5.1.7",
+    "ts-node": "^10.9.2",
+    "vitest": "^4.0.18"
+  }
+}

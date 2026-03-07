@@ -23,7 +23,8 @@
         "Vue.volar",
         "dbaeumer.vscode-eslint",
         "bradlc.vscode-tailwindcss",
-        "openai.chatgpt"
+        "openai.chatgpt",
+        "google.geminicodeassist"
       ]
     }
   }

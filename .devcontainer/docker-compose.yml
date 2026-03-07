@@ -1,6 +1,6 @@
 services:
   workspace:
-    image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
+    image: mcr.microsoft.com/devcontainers/typescript-node:4-22-bookworm
     volumes:
       - ..:/workspaces/photo-calendar:cached
       - /var/run/docker.sock:/var/run/docker.sock
@@ -33,7 +33,7 @@ services:
       - "3306:3306"
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     restart: unless-stopped
     command:
       - redis-server
