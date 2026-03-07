@@ -1,5 +1,4 @@
 import { createError, getRouterParam } from 'h3'
-import { Post } from '../../database/entities'
 import { requireUserFromToken } from '../../utils/auth'
 import { getDataSource } from '../../utils/database'
 
@@ -18,6 +17,22 @@ interface PostByIdResponse {
   }>
 }
 
+interface PostRecord {
+  id: number
+  userId: number
+  externalPostId: string
+  caption: string | null
+  timestamp: Date
+  accountId: number
+  media?: Array<{
+    id: number
+    mediaUrl: string
+    mediaType: string
+    width: number | null
+    height: number | null
+  }>
+}
+
 /**
  * Returns a single post by id for the authenticated user.
  */
@@ -30,7 +45,7 @@ export default defineEventHandler(async (event): Promise<PostByIdResponse> => {
   }
 
   const dataSource = await getDataSource()
-  const post = await dataSource.getRepository(Post).findOne({
+  const post = await dataSource.getRepository<PostRecord>('Post').findOne({
     where: { id, userId: user.id },
     relations: { media: true }
   })

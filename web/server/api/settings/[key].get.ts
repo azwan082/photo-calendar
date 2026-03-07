@@ -1,5 +1,4 @@
 import { createError, getRouterParam } from 'h3'
-import { AppSetting } from '../../database/entities'
 import { requireUserFromToken } from '../../utils/auth'
 import { getDataSource } from '../../utils/database'
 
@@ -8,6 +7,13 @@ interface SettingResponse {
   value: string
   description: string | null
   updated_at: string
+}
+
+interface AppSettingRecord {
+  key: string
+  value: string
+  description: string | null
+  updatedAt: Date
 }
 
 /**
@@ -22,7 +28,7 @@ export default defineEventHandler(async (event): Promise<SettingResponse> => {
   }
 
   const dataSource = await getDataSource()
-  const setting = await dataSource.getRepository(AppSetting).findOne({
+  const setting = await dataSource.getRepository<AppSettingRecord>('AppSetting').findOne({
     where: { key }
   })
 

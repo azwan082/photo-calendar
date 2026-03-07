@@ -2,7 +2,6 @@
   "name": "photo-calendar",
   "type": "module",
   "private": true,
-  "packageManager": "npm@11.11.0",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -13,8 +12,8 @@
     "migration:run": "npm run typeorm -- migration:run",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "test": "vitest",
-    "test:coverage": "vitest --coverage",
+    "test": "vitest --coverage",
+    "test:e2e": "node tests/e2e/index.selenium.mjs",
     "typeorm": "typeorm-ts-node-esm -d server/database/data-source.ts"
   },
   "dependencies": {
@@ -31,6 +30,7 @@
     "@nuxt/test-utils": "^4.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "happy-dom": "^20.8.3",
+    "selenium-webdriver": "^4.41.0",
     "sqlite3": "^5.1.7",
     "ts-node": "^10.9.2",
     "vitest": "^4.0.18"

@@ -1,5 +1,4 @@
 import { createError, getQuery } from 'h3'
-import { Post } from '../../database/entities'
 import { requireUserFromToken } from '../../utils/auth'
 import { getDataSource } from '../../utils/database'
 
@@ -18,6 +17,21 @@ interface PostResponse {
   timestamp: string
   account_id: number
   media: PostMediaResponse[]
+}
+
+interface PostRecord {
+  id: number
+  externalPostId: string
+  caption: string | null
+  timestamp: Date
+  accountId: number
+  media?: Array<{
+    id: number
+    mediaUrl: string
+    mediaType: string
+    width: number | null
+    height: number | null
+  }>
 }
 
 interface PostsListResponse {
@@ -46,7 +60,7 @@ function parseDateQueryParam(value: unknown, name: string): Date | null {
 /**
  * Maps a `Post` entity to API response shape.
  */
-function serializePost(post: Post): PostResponse {
+function serializePost(post: PostRecord): PostResponse {
   return {
     id: post.id,
     external_post_id: post.externalPostId,
@@ -94,7 +108,7 @@ export default defineEventHandler(async (event): Promise<PostsListResponse> => {
   }
 
   const dataSource = await getDataSource()
-  const repository = dataSource.getRepository(Post)
+  const repository = dataSource.getRepository<PostRecord>('Post')
 
   const queryBuilder = repository
     .createQueryBuilder('post')

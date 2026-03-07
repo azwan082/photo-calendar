@@ -1,6 +1,5 @@
 import type { H3Event } from 'h3'
 import { createError, getHeader, getQuery } from 'h3'
-import { SocialAccount, User } from '../database/entities'
 import { getDataSource } from './database'
 import { createTokenResponse, verifyToken, type TokenClaims, type TokenResponse } from './token'
 
@@ -11,7 +10,7 @@ export interface AccessTokenContext {
 
 export interface UserTokenContext {
   claims: TokenClaims
-  user: User
+  user: AuthenticatedUser
 }
 
 export interface SessionResponse {
@@ -20,6 +19,19 @@ export interface SessionResponse {
     name: string
   }
   expires_at: string
+}
+
+interface AuthenticatedUser {
+  id: number
+  displayName: string
+  email: string
+  isSuperadmin: boolean
+}
+
+interface SocialAccountWithUser {
+  id: number
+  provider: string
+  user: AuthenticatedUser
 }
 
 /**
@@ -71,7 +83,7 @@ export async function requireUserFromToken(event: H3Event): Promise<UserTokenCon
   const { claims } = await requireAccessToken(event)
   const dataSource = await getDataSource()
 
-  const user = await dataSource.getRepository(User).findOne({
+  const user = await dataSource.getRepository<AuthenticatedUser>('User').findOne({
     where: { id: Number(claims.sub) }
   })
 
@@ -85,12 +97,12 @@ export async function requireUserFromToken(event: H3Event): Promise<UserTokenCon
 /**
  * Finds a social account by provider and optional account selector.
  */
-export async function findAccountByProvider(provider: unknown, code?: string): Promise<SocialAccount> {
+export async function findAccountByProvider(provider: unknown, code?: string): Promise<SocialAccountWithUser> {
   const safeProvider = ensureProvider(provider)
   const dataSource = await getDataSource()
-  const accountRepository = dataSource.getRepository(SocialAccount)
+  const accountRepository = dataSource.getRepository<SocialAccountWithUser>('SocialAccount')
 
-  let account: SocialAccount | null = null
+  let account: SocialAccountWithUser | null = null
 
   if (code) {
     if (/^\d+$/.test(code)) {
@@ -126,7 +138,7 @@ export async function findAccountByProvider(provider: unknown, code?: string): P
 /**
  * Builds a full token response from a social account and its user.
  */
-export function buildTokenResponseFromAccount(account: SocialAccount): TokenResponse {
+export function buildTokenResponseFromAccount(account: SocialAccountWithUser): TokenResponse {
   return createTokenResponse({
     userId: account.user.id,
     accountId: account.id,
@@ -148,7 +160,7 @@ export function providerFromQuery(event: H3Event): string {
 /**
  * Maps claims and user entity into the session response contract.
  */
-export function toSessionResponse(claims: TokenClaims, user: User): SessionResponse {
+export function toSessionResponse(claims: TokenClaims, user: AuthenticatedUser): SessionResponse {
   return {
     user: {
       id: String(user.id),
