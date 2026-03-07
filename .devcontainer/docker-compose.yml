@@ -5,6 +5,16 @@ services:
       - ..:/workspaces/photo-calendar:cached
       - /var/run/docker.sock:/var/run/docker.sock
     command: sleep infinity
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_USER: photo_calendar
+      DB_PASSWORD: photo_calendar
+      DB_NAME: photo_calendar
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      SYNC_INTERVAL_SECONDS: "1800"
+      QUEUE_PREFIX: photo-calendar
     depends_on:
       - mariadb
       - redis
@@ -33,37 +43,6 @@ services:
       - redis-data:/data
     ports:
       - "6379:6379"
-
-  web:
-    image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
-    working_dir: /workspaces/photo-calendar/web
-    volumes:
-      - ..:/workspaces/photo-calendar:cached
-    command: /bin/bash -lc "npm install"
-    environment:
-      DB_HOST: mariadb
-      DB_PORT: "3306"
-      DB_USER: photo_calendar
-      DB_PASSWORD: photo_calendar
-      DB_NAME: photo_calendar
-    depends_on:
-      - mariadb
-    ports:
-      - "3000:3000"
-
-  worker:
-    image: oven/bun:1.2.23
-    working_dir: /workspaces/photo-calendar/worker
-    volumes:
-      - ..:/workspaces/photo-calendar:cached
-    command: /bin/sh -lc "bun install"
-    environment:
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-      SYNC_INTERVAL_SECONDS: "1800"
-      QUEUE_PREFIX: photo-calendar
-    depends_on:
-      - redis
 
 volumes:
   mariadb-data:

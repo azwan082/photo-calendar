@@ -13,7 +13,7 @@
     {
       "label": "run:dev:worker",
       "type": "shell",
-      "command": "bun run dev",
+      "command": "npm run dev",
       "options": {
         "cwd": "${workspaceFolder}/worker"
       },
@@ -29,9 +29,18 @@
       "problemMatcher": []
     },
     {
+      "label": "run:prod:build",
+      "type": "shell",
+      "command": "npm run build",
+      "options": {
+        "cwd": "${workspaceFolder}/web"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "run:prod:worker",
       "type": "shell",
-      "command": "bun run start",
+      "command": "npm run start",
       "options": {
         "cwd": "${workspaceFolder}/worker"
       },
