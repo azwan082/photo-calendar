@@ -1,6 +1,6 @@
 services:
   workspace:
-    image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
+    image: mcr.microsoft.com/devcontainers/typescript-node:4-22-bookworm
     volumes:
       - ..:/workspaces/photo-calendar:cached
       - /var/run/docker.sock:/var/run/docker.sock
@@ -16,8 +16,12 @@ services:
       SYNC_INTERVAL_SECONDS: "1800"
       QUEUE_PREFIX: photo-calendar
     depends_on:
-      - mariadb
-      - redis
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      geckodriver:
+        condition: service_healthy
 
   mariadb:
     image: mariadb:11.4
@@ -31,9 +35,19 @@ services:
       - mariadb-data:/var/lib/mysql
     ports:
       - "3306:3306"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          awk '$2 ~ /:0CEA$/ && $4 == "0A" { found=1 } END { exit(found ? 0 : 1) }'
+          /proc/net/tcp /proc/net/tcp6
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     restart: unless-stopped
     command:
       - redis-server
@@ -43,6 +57,33 @@ services:
       - redis-data:/data
     ports:
       - "6379:6379"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          awk '$2 ~ /:18EB$/ && $4 == "0A" { found=1 } END { exit(found ? 0 : 1) }'
+          /proc/net/tcp /proc/net/tcp6
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  geckodriver:
+    image: selenium/standalone-firefox:4.32.0
+    restart: unless-stopped
+    shm_size: 2gb
+    ports:
+      - "4444:4444"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          awk '$2 ~ /:115C$/ && $4 == "0A" { found=1 } END { exit(found ? 0 : 1) }'
+          /proc/net/tcp /proc/net/tcp6
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
 volumes:
   mariadb-data:

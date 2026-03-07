@@ -38,6 +38,24 @@
       "problemMatcher": []
     },
     {
+      "label": "run:test:web",
+      "type": "shell",
+      "command": "npm run test",
+      "options": {
+        "cwd": "${workspaceFolder}/web"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "run:test:web:e2e",
+      "type": "shell",
+      "command": "npm run test:e2e",
+      "options": {
+        "cwd": "${workspaceFolder}/web"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "run:prod:worker",
       "type": "shell",
       "command": "npm run start",

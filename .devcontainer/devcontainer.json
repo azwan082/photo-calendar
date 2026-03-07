@@ -8,22 +8,26 @@
   "runServices": [
     "workspace",
     "mariadb",
-    "redis"
+    "redis",
+    "geckodriver"
   ],
   "shutdownAction": "stopCompose",
   "forwardPorts": [
     3000,
     3306,
-    6379
+    6379,
+    4444
   ],
   "postCreateCommand": "cd /workspaces/photo-calendar/web && npm install && cd /workspaces/photo-calendar/worker && npm install",
+  "postStartCommand": "npm install -g npm@11.11.0",
   "customizations": {
     "vscode": {
       "extensions": [
         "Vue.volar",
         "dbaeumer.vscode-eslint",
         "bradlc.vscode-tailwindcss",
-        "openai.chatgpt"
+        "openai.chatgpt",
+        "google.geminicodeassist"
       ]
     }
   }
