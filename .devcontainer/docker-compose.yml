@@ -1,0 +1,49 @@
+services:
+  workspace:
+    image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
+    volumes:
+      - ..:/workspaces/photo-calendar:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sleep infinity
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_USER: photo_calendar
+      DB_PASSWORD: photo_calendar
+      DB_NAME: photo_calendar
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      SYNC_INTERVAL_SECONDS: "1800"
+      QUEUE_PREFIX: photo-calendar
+    depends_on:
+      - mariadb
+      - redis
+
+  mariadb:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: photo_calendar
+      MYSQL_USER: photo_calendar
+      MYSQL_PASSWORD: photo_calendar
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+
+volumes:
+  mariadb-data:
+  redis-data:

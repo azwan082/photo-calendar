@@ -1,0 +1,30 @@
+{
+  "name": "photo-calendar",
+  "dockerComposeFile": [
+    "docker-compose.yml"
+  ],
+  "service": "workspace",
+  "workspaceFolder": "/workspaces/photo-calendar",
+  "runServices": [
+    "workspace",
+    "mariadb",
+    "redis"
+  ],
+  "shutdownAction": "stopCompose",
+  "forwardPorts": [
+    3000,
+    3306,
+    6379
+  ],
+  "postCreateCommand": "cd /workspaces/photo-calendar/web && npm install && cd /workspaces/photo-calendar/worker && npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Vue.volar",
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss",
+        "openai.chatgpt"
+      ]
+    }
+  }
+}
