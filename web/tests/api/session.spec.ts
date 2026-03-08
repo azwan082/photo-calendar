@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { DataSource } from 'typeorm'
 import type { FetchError } from 'ofetch'
-import { AppSetting, Media, Post, SocialAccount, SyncLog, User } from '~/server/database/entities'
+import { AppSettingSchema, MediaSchema, PostSchema, SocialAccountSchema, SyncLogSchema, UserSchema } from '~/server/database/entities'
 import { createApiServer, createMemoryDataSource, setTestDataSource, testDataSource } from './helpers'
 import { seedUserWithAccount } from './fixtures'
 
@@ -15,13 +15,12 @@ describe('Session API', () => {
   let accessToken: string
 
   beforeAll(async () => {
-    dataSource = await createMemoryDataSource([User, SocialAccount, Post, Media, SyncLog, AppSetting])
+    dataSource = await createMemoryDataSource([UserSchema, SocialAccountSchema, PostSchema, MediaSchema, SyncLogSchema, AppSettingSchema])
     setTestDataSource(dataSource)
 
     const seeded = await seedUserWithAccount(dataSource, {
       provider: 'google',
       accountId: 'session-acct',
-      displayName: 'Session User',
       email: 'session@example.com',
       username: 'session-user'
     })
@@ -44,9 +43,12 @@ describe('Session API', () => {
       headers: { Authorization: `Bearer ${accessToken}` }
     })
 
-    expect(session.user.id).toBeTypeOf('string')
-    expect(session.user.name).toBe('Session User')
-    expect(session.expires_at).toBeTypeOf('string')
+    expect(session.message).toBe('')
+    expect(session.data.user.id).toBeTypeOf('string')
+    expect(session.data.user.username).toBe('session-user')
+    expect(session.data.user.email).toBe('session@example.com')
+    expect(session.data.user.is_superadmin).toBe(true)
+    expect(session.data.expires_at).toBeTypeOf('string')
   })
 
   it('GET /api/session returns 401 without token', async () => {
@@ -60,9 +62,13 @@ describe('Session API', () => {
       body: { token: accessToken }
     })
 
-    expect(result.valid).toBe(true)
-    expect(result.claims.provider).toBe('google')
-    expect(result.claims.type).toBe('access')
+    expect(result.message).toBe('')
+    expect(result.data.valid).toBe(true)
+    expect(result.data.claims.sub).toBeTypeOf('string')
+    expect(result.data.claims.exp).toBeTypeOf('number')
+    expect(result.data.claims.provider).toBe('google')
+    expect(result.data.claims.type).toBe('access')
+    expect(result.data.claims.jti).toBeTypeOf('string')
   })
 
   it('POST /api/session/validate returns 401 for invalid token', async () => {

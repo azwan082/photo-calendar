@@ -1,30 +1,20 @@
 import { createError, getRouterParam, readBody } from 'h3'
+import { AppSettingSchema } from '../../database/entities'
+import type { AppSettingInterface } from '../../database/entities'
+import type { KeyedResponse, SettingDto } from '../../types/api'
 import { requireUserFromToken } from '../../utils/auth'
 import { getDataSource } from '../../utils/database'
+import { toSettingDto } from '../../utils/serializers'
 
 interface UpdateSettingBody {
   value?: string
   description?: string | null
 }
 
-interface SettingResponse {
-  key: string
-  value: string
-  description: string | null
-  updated_at: string
-}
-
-interface AppSettingRecord {
-  key: string
-  value: string
-  description: string | null
-  updatedAt: Date
-}
-
 /**
  * Updates an existing application setting by key.
  */
-export default defineEventHandler(async (event): Promise<SettingResponse> => {
+export default defineEventHandler(async (event): Promise<KeyedResponse<'setting', SettingDto>> => {
   await requireUserFromToken(event)
 
   const key = getRouterParam(event, 'key')
@@ -38,7 +28,7 @@ export default defineEventHandler(async (event): Promise<SettingResponse> => {
   }
 
   const dataSource = await getDataSource()
-  const repository = dataSource.getRepository<AppSettingRecord>('AppSetting')
+  const repository = dataSource.getRepository('app_setting')
   const setting = await repository.findOne({ where: { key } })
 
   if (!setting) {
@@ -52,10 +42,5 @@ export default defineEventHandler(async (event): Promise<SettingResponse> => {
 
   const saved = await repository.save(setting)
 
-  return {
-    key: saved.key,
-    value: saved.value,
-    description: saved.description,
-    updated_at: saved.updatedAt.toISOString()
-  }
+  return { message: '', setting: toSettingDto(saved) }
 })

@@ -1,4 +1,5 @@
 import { createError, readBody } from 'h3'
+import type { DataResponse } from '../../types/api'
 import {
   buildTokenResponseFromAccount,
   findAccountByProvider
@@ -15,7 +16,7 @@ interface TokenBody {
 /**
  * Exchanges either an authorization code or refresh token for a new token set.
  */
-export default defineEventHandler(async (event): Promise<TokenResponse> => {
+export default defineEventHandler(async (event): Promise<DataResponse<TokenResponse>> => {
   const body = await readBody<TokenBody>(event)
 
   if (!body?.provider || typeof body.provider !== 'string') {
@@ -32,7 +33,10 @@ export default defineEventHandler(async (event): Promise<TokenResponse> => {
     }
 
     const account = await findAccountByProvider(body.provider, body.code)
-    return buildTokenResponseFromAccount(account)
+    return {
+      message: '',
+      data: buildTokenResponseFromAccount(account)
+    }
   }
 
   if (!body.refresh_token || typeof body.refresh_token !== 'string') {
@@ -45,5 +49,8 @@ export default defineEventHandler(async (event): Promise<TokenResponse> => {
   }
 
   const account = await findAccountByProvider(body.provider, String(refreshClaims.account_id))
-  return buildTokenResponseFromAccount(account)
+  return {
+    message: '',
+    data: buildTokenResponseFromAccount(account)
+  }
 })

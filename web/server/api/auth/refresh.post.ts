@@ -1,4 +1,5 @@
 import { createError, readBody } from 'h3'
+import type { DataResponse } from '../../types/api'
 import { buildTokenResponseFromAccount, findAccountByProvider } from '../../utils/auth'
 import { verifyToken } from '../../utils/token'
 
@@ -7,7 +8,7 @@ interface RefreshBody {
   refresh_token?: string
 }
 
-interface RefreshResponse {
+interface RefreshPayload {
   access_token: string
   expires_in: number
 }
@@ -15,7 +16,7 @@ interface RefreshResponse {
 /**
  * Issues a new access token by validating a refresh token.
  */
-export default defineEventHandler(async (event): Promise<RefreshResponse> => {
+export default defineEventHandler(async (event): Promise<DataResponse<RefreshPayload>> => {
   const body = await readBody<RefreshBody>(event)
 
   if (!body?.provider || typeof body.provider !== 'string') {
@@ -35,7 +36,10 @@ export default defineEventHandler(async (event): Promise<RefreshResponse> => {
   const tokens = buildTokenResponseFromAccount(account)
 
   return {
-    access_token: tokens.access_token,
-    expires_in: tokens.expires_in
+    message: '',
+    data: {
+      access_token: tokens.access_token,
+      expires_in: tokens.expires_in
+    }
   }
 })

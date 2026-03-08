@@ -1,25 +1,15 @@
 import { createError, getRouterParam } from 'h3'
+import { AppSettingSchema } from '../../database/entities'
+import type { AppSettingInterface } from '../../database/entities'
+import type { KeyedResponse, SettingDto } from '../../types/api'
 import { requireUserFromToken } from '../../utils/auth'
 import { getDataSource } from '../../utils/database'
-
-interface SettingResponse {
-  key: string
-  value: string
-  description: string | null
-  updated_at: string
-}
-
-interface AppSettingRecord {
-  key: string
-  value: string
-  description: string | null
-  updatedAt: Date
-}
+import { toSettingDto } from '../../utils/serializers'
 
 /**
  * Retrieves one application setting by key.
  */
-export default defineEventHandler(async (event): Promise<SettingResponse> => {
+export default defineEventHandler(async (event): Promise<KeyedResponse<'setting', SettingDto>> => {
   await requireUserFromToken(event)
 
   const key = getRouterParam(event, 'key')
@@ -28,7 +18,9 @@ export default defineEventHandler(async (event): Promise<SettingResponse> => {
   }
 
   const dataSource = await getDataSource()
-  const setting = await dataSource.getRepository<AppSettingRecord>('AppSetting').findOne({
+  const repository = dataSource.getRepository('app_setting')
+
+  const setting = await repository.findOne({
     where: { key }
   })
 
@@ -36,10 +28,5 @@ export default defineEventHandler(async (event): Promise<SettingResponse> => {
     throw createError({ statusCode: 404, statusMessage: 'not found' })
   }
 
-  return {
-    key: setting.key,
-    value: setting.value,
-    description: setting.description,
-    updated_at: setting.updatedAt.toISOString()
-  }
+  return { message: '', setting: toSettingDto(setting) }
 })

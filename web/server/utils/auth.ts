@@ -1,5 +1,6 @@
 import type { H3Event } from 'h3'
 import { createError, getHeader, getQuery } from 'h3'
+import type { SessionDto } from '../types/api'
 import { getDataSource } from './database'
 import { createTokenResponse, verifyToken, type TokenClaims, type TokenResponse } from './token'
 
@@ -13,17 +14,9 @@ export interface UserTokenContext {
   user: AuthenticatedUser
 }
 
-export interface SessionResponse {
-  user: {
-    id: string
-    name: string
-  }
-  expires_at: string
-}
-
 interface AuthenticatedUser {
   id: number
-  displayName: string
+  username: string
   email: string
   isSuperadmin: boolean
 }
@@ -83,7 +76,7 @@ export async function requireUserFromToken(event: H3Event): Promise<UserTokenCon
   const { claims } = await requireAccessToken(event)
   const dataSource = await getDataSource()
 
-  const user = await dataSource.getRepository<AuthenticatedUser>('User').findOne({
+  const user = await dataSource.getRepository<AuthenticatedUser>('user').findOne({
     where: { id: Number(claims.sub) }
   })
 
@@ -100,7 +93,7 @@ export async function requireUserFromToken(event: H3Event): Promise<UserTokenCon
 export async function findAccountByProvider(provider: unknown, code?: string): Promise<SocialAccountWithUser> {
   const safeProvider = ensureProvider(provider)
   const dataSource = await getDataSource()
-  const accountRepository = dataSource.getRepository<SocialAccountWithUser>('SocialAccount')
+  const accountRepository = dataSource.getRepository<SocialAccountWithUser>('social_account')
 
   let account: SocialAccountWithUser | null = null
 
@@ -143,7 +136,7 @@ export function buildTokenResponseFromAccount(account: SocialAccountWithUser): T
     userId: account.user.id,
     accountId: account.id,
     provider: account.provider,
-    name: account.user.displayName,
+    name: account.user.username,
     email: account.user.email,
     roles: account.user.isSuperadmin ? ['admin', 'user'] : ['user']
   })
@@ -160,11 +153,13 @@ export function providerFromQuery(event: H3Event): string {
 /**
  * Maps claims and user entity into the session response contract.
  */
-export function toSessionResponse(claims: TokenClaims, user: AuthenticatedUser): SessionResponse {
+export function toSessionResponse(claims: TokenClaims, user: AuthenticatedUser): SessionDto {
   return {
     user: {
       id: String(user.id),
-      name: user.displayName
+      username: user.username,
+      email: user.email,
+      is_superadmin: user.isSuperadmin
     },
     expires_at: new Date(claims.exp * 1000).toISOString()
   }

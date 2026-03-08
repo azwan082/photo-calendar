@@ -26,8 +26,11 @@
         "Vue.volar",
         "dbaeumer.vscode-eslint",
         "bradlc.vscode-tailwindcss",
+        "bierner.markdown-mermaid",
         "openai.chatgpt",
-        "google.geminicodeassist"
+        "google.geminicodeassist",
+        "anthropic.claude-code",
+        "alibaba-cloud.tongyi-lingma"
       ]
     }
   }

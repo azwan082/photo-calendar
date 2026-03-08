@@ -1,4 +1,5 @@
 import { createError, getQuery, readBody } from 'h3'
+import type { MessageResponse } from '../../types/api'
 import { revokeToken } from '../../utils/token'
 
 interface RevokeBody {
@@ -6,14 +7,10 @@ interface RevokeBody {
   provider?: string
 }
 
-interface RevokeResponse {
-  message: string
-}
-
 /**
  * Revokes a token provided through query or request body.
  */
-export default defineEventHandler(async (event): Promise<RevokeResponse> => {
+export default defineEventHandler(async (event): Promise<MessageResponse> => {
   const query = getQuery(event)
   let body: RevokeBody = {}
 

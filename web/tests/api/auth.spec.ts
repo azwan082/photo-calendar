@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { DataSource } from 'typeorm'
 import type { FetchError } from 'ofetch'
-import { AppSetting, Media, Post, SocialAccount, SyncLog, User } from '~/server/database/entities'
+import { AppSettingSchema, MediaSchema, PostSchema, SocialAccountSchema, SyncLogSchema, UserSchema } from '~/server/database/entities'
 import { createApiServer, createMemoryDataSource, setTestDataSource, testDataSource } from './helpers'
 import { seedUserWithAccount } from './fixtures'
 
@@ -14,13 +14,12 @@ describe('Auth API', () => {
   let server: Awaited<ReturnType<typeof createApiServer>>
 
   beforeAll(async () => {
-    dataSource = await createMemoryDataSource([User, SocialAccount, Post, Media, SyncLog, AppSetting])
+    dataSource = await createMemoryDataSource([UserSchema, SocialAccountSchema, PostSchema, MediaSchema, SyncLogSchema, AppSettingSchema])
     setTestDataSource(dataSource)
 
     await seedUserWithAccount(dataSource, {
       provider: 'google',
       accountId: 'auth-code-123',
-      displayName: 'Auth User',
       email: 'auth@example.com',
       username: 'auth-user'
     })
@@ -68,10 +67,11 @@ describe('Auth API', () => {
   it('GET /api/auth/callback returns token set', async () => {
     const result = await server.api('/api/auth/callback?provider=google&code=auth-code-123&state=ok')
 
-    expect(result.access_token).toBeTypeOf('string')
-    expect(result.id_token).toBeTypeOf('string')
-    expect(result.refresh_token).toBeTypeOf('string')
-    expect(result.expires_in).toBe(3600)
+    expect(result.message).toBe('')
+    expect(result.data.access_token).toBeTypeOf('string')
+    expect(result.data.id_token).toBeTypeOf('string')
+    expect(result.data.refresh_token).toBeTypeOf('string')
+    expect(result.data.expires_in).toBe(3600)
   })
 
   it('POST /api/auth/token returns 400 for invalid grant_type', async () => {
@@ -89,8 +89,9 @@ describe('Auth API', () => {
       body: { provider: 'google', grant_type: 'authorization_code', code: 'auth-code-123' }
     })
 
-    expect(token.access_token).toBeTypeOf('string')
-    expect(token.refresh_token).toBeTypeOf('string')
+    expect(token.message).toBe('')
+    expect(token.data.access_token).toBeTypeOf('string')
+    expect(token.data.refresh_token).toBeTypeOf('string')
   })
 
   it('POST /api/auth/token refresh grant returns 401 for provider mismatch', async () => {
@@ -101,7 +102,7 @@ describe('Auth API', () => {
 
     const error = await server.api('/api/auth/token', {
       method: 'POST',
-      body: { provider: 'azuread', grant_type: 'refresh_token', refresh_token: token.refresh_token }
+      body: { provider: 'azuread', grant_type: 'refresh_token', refresh_token: token.data.refresh_token }
     }).catch((err: FetchError) => err)
 
     expect((error as FetchError).response?.status).toBe(401)
@@ -115,11 +116,12 @@ describe('Auth API', () => {
 
     const refreshed = await server.api('/api/auth/refresh', {
       method: 'POST',
-      body: { provider: 'google', refresh_token: token.refresh_token }
+      body: { provider: 'google', refresh_token: token.data.refresh_token }
     })
 
-    expect(refreshed.access_token).toBeTypeOf('string')
-    expect(refreshed.expires_in).toBe(3600)
+    expect(refreshed.message).toBe('')
+    expect(refreshed.data.access_token).toBeTypeOf('string')
+    expect(refreshed.data.expires_in).toBe(3600)
   })
 
   it('GET /api/auth/logout returns 400 when provider is missing', async () => {
@@ -153,11 +155,12 @@ describe('Auth API', () => {
     })
 
     const userInfo = await server.api('/api/auth/userinfo', {
-      headers: { Authorization: `Bearer ${token.access_token}` }
+      headers: { Authorization: `Bearer ${token.data.access_token}` }
     })
 
-    expect(userInfo.email).toBe('auth@example.com')
-    expect(userInfo.roles).toEqual(['admin', 'user'])
+    expect(userInfo.message).toBe('')
+    expect(userInfo.data.email).toBe('auth@example.com')
+    expect(userInfo.data.roles).toEqual(['admin', 'user'])
   })
 
   it('GET /api/auth/userinfo returns 401 when provider query mismatches token', async () => {
@@ -167,7 +170,7 @@ describe('Auth API', () => {
     })
 
     const error = await server.api('/api/auth/userinfo?provider=azuread', {
-      headers: { Authorization: `Bearer ${token.access_token}` }
+      headers: { Authorization: `Bearer ${token.data.access_token}` }
     }).catch((err: FetchError) => err)
 
     expect((error as FetchError).response?.status).toBe(401)

@@ -1,14 +1,11 @@
 import { createError, getQuery } from 'h3'
+import type { MessageResponse } from '../../types/api'
 import { revokeToken } from '../../utils/token'
-
-interface LogoutResponse {
-  message: string
-}
 
 /**
  * Logs out the current user session for GET-based logout requests.
  */
-export default defineEventHandler(async (event): Promise<LogoutResponse> => {
+export default defineEventHandler(async (event): Promise<MessageResponse> => {
   const query = getQuery(event)
 
   if (typeof query.provider !== 'string' || query.provider.trim().length === 0) {

@@ -1,10 +1,10 @@
 import type { DataSource } from 'typeorm'
-import { AuthType, SocialAccount, User } from '~/server/database/entities'
+import { AuthType, SocialAccountSchema, UserSchema } from '~/server/database/entities'
 import { createTokenResponse, type TokenResponse } from '~/server/utils/token'
 
 export interface SeededAuthContext {
-  user: User
-  account: SocialAccount
+  user: any
+  account: any
   tokens: TokenResponse
 }
 
@@ -14,22 +14,22 @@ export const seedUserWithAccount = async (
     provider?: string
     accountId?: string
     isSuperadmin?: boolean
+    isSyncLocked?: boolean
     email?: string
-    displayName?: string
     username?: string
   }
 ): Promise<SeededAuthContext> => {
-  const userRepository = dataSource.getRepository(User)
-  const accountRepository = dataSource.getRepository(SocialAccount)
+  const userRepository = dataSource.getRepository('user')
+  const accountRepository = dataSource.getRepository('social_account')
 
   const user = await userRepository.save(
     userRepository.create({
       email: options?.email ?? 'test@example.com',
-      displayName: options?.displayName ?? 'Test User',
       authType: AuthType.SSO,
       username: options?.username ?? 'test-user',
       passwordHash: null,
-      isSuperadmin: options?.isSuperadmin ?? true
+      isSuperadmin: options?.isSuperadmin ?? true,
+      isSyncLocked: options?.isSyncLocked ?? false
     })
   )
 
@@ -50,7 +50,7 @@ export const seedUserWithAccount = async (
     userId: user.id,
     accountId: account.id,
     provider: account.provider,
-    name: user.displayName,
+    name: user.username,
     email: user.email,
     roles
   })

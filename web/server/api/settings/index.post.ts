@@ -1,6 +1,10 @@
 import { createError, readBody, setResponseStatus } from 'h3'
+import { AppSettingSchema } from '../../database/entities'
+import type { AppSettingInterface } from '../../database/entities'
+import type { KeyedResponse, SettingDto } from '../../types/api'
 import { requireUserFromToken } from '../../utils/auth'
 import { getDataSource } from '../../utils/database'
+import { toSettingDto } from '../../utils/serializers'
 
 interface CreateSettingBody {
   key?: string
@@ -8,24 +12,10 @@ interface CreateSettingBody {
   description?: string | null
 }
 
-interface SettingResponse {
-  key: string
-  value: string
-  description: string | null
-  updated_at: string
-}
-
-interface AppSettingRecord {
-  key: string
-  value: string
-  description: string | null
-  updatedAt: Date
-}
-
 /**
  * Creates a new application setting.
  */
-export default defineEventHandler(async (event): Promise<SettingResponse> => {
+export default defineEventHandler(async (event): Promise<KeyedResponse<'setting', SettingDto>> => {
   await requireUserFromToken(event)
 
   const body = await readBody<CreateSettingBody>(event)
@@ -40,7 +30,7 @@ export default defineEventHandler(async (event): Promise<SettingResponse> => {
   }
 
   const dataSource = await getDataSource()
-  const repository = dataSource.getRepository<AppSettingRecord>('AppSetting')
+  const repository = dataSource.getRepository('app_setting')
 
   const existing = await repository.findOne({ where: { key } })
   if (existing) {
@@ -56,10 +46,5 @@ export default defineEventHandler(async (event): Promise<SettingResponse> => {
   const saved = await repository.save(setting)
   setResponseStatus(event, 201)
 
-  return {
-    key: saved.key,
-    value: saved.value,
-    description: saved.description,
-    updated_at: saved.updatedAt.toISOString()
-  }
+  return { message: '', setting: toSettingDto(saved) }
 })

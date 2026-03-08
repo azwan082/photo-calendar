@@ -1,42 +1,15 @@
 import { createError, getRouterParam } from 'h3'
+import { PostSchema } from '../../database/entities'
+import type { PostInterface } from '../../database/entities'
+import type { KeyedResponse, PostDto } from '../../types/api'
 import { requireUserFromToken } from '../../utils/auth'
 import { getDataSource } from '../../utils/database'
-
-interface PostByIdResponse {
-  id: number
-  external_post_id: string
-  caption: string | null
-  timestamp: string
-  account_id: number
-  media: Array<{
-    id: number
-    media_url: string
-    media_type: string
-    width: number | null
-    height: number | null
-  }>
-}
-
-interface PostRecord {
-  id: number
-  userId: number
-  externalPostId: string
-  caption: string | null
-  timestamp: Date
-  accountId: number
-  media?: Array<{
-    id: number
-    mediaUrl: string
-    mediaType: string
-    width: number | null
-    height: number | null
-  }>
-}
+import { toPostDto } from '../../utils/serializers'
 
 /**
  * Returns a single post by id for the authenticated user.
  */
-export default defineEventHandler(async (event): Promise<PostByIdResponse> => {
+export default defineEventHandler(async (event): Promise<KeyedResponse<'post', PostDto>> => {
   const { user } = await requireUserFromToken(event)
   const id = Number(getRouterParam(event, 'id'))
 
@@ -45,7 +18,7 @@ export default defineEventHandler(async (event): Promise<PostByIdResponse> => {
   }
 
   const dataSource = await getDataSource()
-  const post = await dataSource.getRepository<PostRecord>('Post').findOne({
+  const post = await dataSource.getRepository('post').findOne({
     where: { id, userId: user.id },
     relations: { media: true }
   })
@@ -54,18 +27,5 @@ export default defineEventHandler(async (event): Promise<PostByIdResponse> => {
     throw createError({ statusCode: 404, statusMessage: 'no posts found' })
   }
 
-  return {
-    id: post.id,
-    external_post_id: post.externalPostId,
-    caption: post.caption,
-    timestamp: post.timestamp.toISOString(),
-    account_id: post.accountId,
-    media: (post.media ?? []).map((media) => ({
-      id: media.id,
-      media_url: media.mediaUrl,
-      media_type: media.mediaType,
-      width: media.width,
-      height: media.height
-    }))
-  }
+  return { message: '', post: toPostDto(post) }
 })
