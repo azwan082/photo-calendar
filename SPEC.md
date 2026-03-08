@@ -197,7 +197,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li>`provider` (query, required) → e.g. "google", "azuread", "keycloak" <li>`redirect_uri` (query, optional override) <li>`state` (query, generated server-side) |
-| Output     | <pre>{<br>  "redirect_url": "[IdP authorization endpoint]"<br>} |
+| Output     | <pre>{<br>  "message": "",<br>  "data": {<br>    "redirect_url": "[IdP authorization endpoint]"<br>  }<br>} |
 | HTTP Codes | `302` (success redirect) <br> `400` (invalid request) |
 
 `/api/auth/callback` (GET)
@@ -205,7 +205,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `provider` (query, required) <li> `code` (query, required) <li> `state` (query, required) |
-| Output     | <pre>{<br>  "access_token": "string",<br>  "id_token": "string",<br>  "refresh_token": "string",<br>  "expires_in": 3600<br>}</pre> |
+| Output     | <pre>{<br>  "message": "",<br>  "data": {<br>      "access_token": "string",<br>      "id_token": "string",<br>      "refresh_token": "string",<br>      "expires_in": 3600<br>  }<br>}</pre> |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (token exchange failed) |
 
 `/api/auth/token` (POST)
@@ -221,7 +221,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `provider` (body, required) <li> `refresh_token` (required) |
-| Output     | <pre>{<br>  "access_token": "string",<br>  "expires_in": 3600<br>} |
+| Output     | <pre>{<br>  "message": "",<br>  "data": {<br>     "access_token": "string",<br>     "expires_in": 3600<br>  }<br>} |
 | HTTP Codes | `200` (success) <br> `401` (invalid/expired refresh token) |
 
 `/api/auth/logout` (GET, POST)
@@ -237,7 +237,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `Authorization: Bearer` (header, required) <li> `provider` (query, optional — backend can auto‑detect from `iss` claim in token) |
-| Output     | <pre>{<br>  "sub": "user-id",<br>  "name": "John Doe",<br>  "email": "johndoe@example.com",<br>  "roles": ["admin", "user"]<br>} |
+| Output     | <pre>{<br>  "message": "",<br>  "data": {<br>      "sub": "user-id",<br>      "name": "John Doe",<br>      "email": "johndoe@example.com",<br>      "roles": ["admin", "user"]<br>  }<br>} |
 | HTTP Codes | `200` (success) <br> `401` (invalid/expired token) |
 
 ### Session & Token Management
@@ -247,7 +247,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `Authorization: Bearer` (header, required) <li> `provider` (query, optional — backend can auto‑detect from `iss`) |
-| Output     | <pre>{<br>  "user": {<br>    "id": "123",<br>    "username": "johndoe",<br>    "email": "johndoe@example.com",<br>    "is_superadmin": false<br>  },<br>  "expires_at": "2026-02-23T07:22:00Z"<br>} |
+| Output     | <pre>{<br>  "message": "",<br>  "data": {<br>      "user": {<br>        "id": "123",<br>        "username": "johndoe",<br>        "email": "johndoe@example.com",<br>        "is_superadmin": false<br>      },<br>    "expires_at": "2026-02-23T07:22:00Z"<br>  }<br>} |
 | HTTP Codes | `200` (success) <br> `401` (no active session) |
 
 `/api/session/validate` (POST)
@@ -272,7 +272,7 @@ erDiagram
 
 | Aspect     | Details |
 | ---------- | ------- |
-| Parameters | <li> `Authorization: Bearer` (header, required) <li> `page` (int, optional) → pagination page number <li> `limit` (int, optional) → number of posts per page <li> `filter` (JSON string, optional)  → filter by this column: <pre>{<br>  "$column": {<br>    "value": "", // required if min & max below not specified & vice versa<br>    "cmp": "eq/lt/gt", // default: eq<br>    "min": "",<br>    "max": ""<br>  }<br>}</pre> `$column`: email, username, is_superadmin, is_sync_locked <li> `sort` (string, optional: asc/desc, default: desc) <li> `sort_by` (string, optional, default: id) → sort by this column |
+| Parameters | <li> `Authorization: Bearer` (header, required) <li> `page` (int, optional, default: 1) → pagination page number <li> `limit` (int, optional, default: 100) → number of posts per page <li> `filter` (JSON string, optional)  → filter by this column: <pre>{<br>  "$column": {<br>    "value": "", // required if min & max below not specified & vice versa<br>    "cmp": "", // '=', '!=', '>', '>=', '<', '<=', default: '='<br>    "min": "",<br>    "max": ""<br>  }<br>}</pre> `$column`: email, username, is_superadmin, is_sync_locked <li> `sort` (string, optional: asc/desc, default: desc) <li> `sort_by` (string, optional, default: id) → sort by this column |
 | Output     | <pre>{ <br>  "page": 1,<br>  "limit": 10,<br>  "total": 125,<br>  "users": [<br>    {<br>      "id": 101,<br>      "email": "johndoe@example.com",<br>      "username": "johndoe",<br>      "auth_type": "sso",<br>      "is_superadmin": false,<br>      "is_sync_locked": false,<br>      "created_at": "2026-02-20T18:30:00Z",<br>    }<br>  ]<br>} |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (no users found) <br> `500` (internal server error) |
 
@@ -281,7 +281,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `Authorization: Bearer` (header, required) <li> `id` (int) → Unique identifier of the post |
-| Output     | <pre>{<br>  "id": 101,<br>  "email": "johndoe@example.com",<br>  "username": "johndoe",<br>  "auth_type": "sso",<br>  "is_superadmin": false,<br>  "is_sync_locked": false,<br>  "created_at": "2026-02-20T18:30:00Z",<br>} |
+| Output     | <pre>{<br>  "message": "",<br>  "user": {<br>    "id": 101,<br>    "email": "johndoe@example.com",<br>    "username": "johndoe",<br>    "auth_type": "sso",<br>    "is_superadmin": false,<br>    "is_sync_locked": false,<br>    "created_at": "2026-02-20T18:30:00Z",<br>  }<br>} |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (no users found) <br> `500` (internal server error) |
 
 `/api/users/{id}` (PUT)
@@ -289,7 +289,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `Authorization: Bearer` (header, required) <li> `id` (query, required) → user ID <li> JSON Body: <pre>{<br>  "username": "johndoe",<br>  "is_sync_locked": true<br>} |
-| Output | <pre>{<br>  "id": 101,<br>  "email": "johndoe@example.com",<br>  "username": "johndoe",<br>  "auth_type": "sso",<br>  "is_superadmin": false,<br>  "is_sync_locked": false,<br>  "created_at": "2026-02-20T18:30:00Z",<br>} |
+| Output | <pre>{<br>  "message": "",<br>  "user": {<br>    "id": 101,<br>    "email": "johndoe@example.com",<br>    "username": "johndoe",<br>    "auth_type": "sso",<br>    "is_superadmin": false,<br>    "is_sync_locked": false,<br>    "created_at": "2026-02-20T18:30:00Z",<br>  }<br>} |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (not found) <br> `500` (internal server error) |
 
 `/api/users/{id}` (DELETE)
@@ -307,7 +307,7 @@ erDiagram
 
 | Aspect     | Details |
 | ---------- | ------- |
-| Parameters | <li> `Authorization: Bearer` (header, required) <li> `page` (int, optional) → pagination page number <li> `limit` (int, optional) → number of posts per page <li> `from_timestamp` (datetime, optional) → filter posts newer than this timestamp <li> `to_timestamp` (datetime, optional) → filter posts older than this timestamp <li> `sort` (string, optional: asc/desc, default: desc) <li> `sort_by` (string, optional, default: id) → sort by this column |
+| Parameters | <li> `Authorization: Bearer` (header, required) <li> `page` (int, optional, default: 1) → pagination page number <li> `limit` (int, optional, default: 100) → number of posts per page <li> `from_timestamp` (datetime, optional) → filter posts newer than this timestamp <li> `to_timestamp` (datetime, optional) → filter posts older than this timestamp <li> `sort` (string, optional: asc/desc, default: desc) <li> `sort_by` (string, optional, default: id) → sort by this column |
 | Output     | <pre>{ <br>  "page": 1,<br>  "limit": 10,<br>  "total": 125,<br>  "posts": [<br>    {<br>      "id": 101,<br>      "external_post_id": "fb_12345",<br>      "caption": "Sunset view!",<br>      "timestamp": "2026-02-20T18:30:00",<br>      "account_id": 5,<br>      "media": [<br>        {<br>          "id": 501,<br>          "media_url": "https://cdn.app/photos/sunset.jpg",<br>          "media_type": "photo",<br>          "width": 1080,<br>          "height": 720<br>        }<br>      ]<br>    }<br>  ]<br>} |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (no posts found) <br> `500` (internal server error) |
 
@@ -316,7 +316,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `Authorization: Bearer` (header, required) <li> `id` (int) → Unique identifier of the post |
-| Output     | <pre>{<br>  "id": 101,<br>  "external_post_id": "fb_12345",<br>  "caption": "Sunset view!",<br>  "timestamp": "2026-02-20T18:30:00Z",<br>  "account_id": 5,<br>  "media": [<br>    {<br>      "id": 501,<br>      "media_url": "https://cdn.app/photos/sunset.jpg",<br>      "media_type": "photo",<br>      "width": 1080,<br>      "height": 720<br>    },<br>    {<br>      "id": 502,<br>      "media_url": "https://cdn.app/photos/sunset2.jpg",<br>      "media_type": "photo",<br>      "width": 640,<br>      "height": 480<br>    }<br>  ]<br>} |
+| Output     | <pre>{<br>  "message": "",<br>  "post": {<br>    "id": 101,<br>    "external_post_id": "fb_12345",<br>    "caption": "Sunset view!",<br>    "timestamp": "2026-02-20T18:30:00Z",<br>    "account_id": 5,<br>    "media": [<br>      {<br>        "id": 501,<br>        "media_url": "https://cdn.app/photos/sunset.jpg",<br>        "media_type": "photo",<br>        "width": 1080,<br>        "height": 720<br>      },<br>      {<br>        "id": 502,<br>        "media_url": "https://cdn.app/photos/sunset2.jpg",<br>        "media_type": "photo",<br>        "width": 640,<br>        "height": 480<br>      }<br>    ]<br>  }<br>} |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (no posts found) <br> `500` (internal server error) |
 
 ### App Settings
@@ -325,8 +325,8 @@ erDiagram
 
 | Aspect     | Details |
 | ---------- | ------- |
-| Parameters | <li> `Authorization: Bearer` (header, required) |
-| Output     | <pre>{<br>  "settings": [<br>    {<br>      "key": "sync_interval_minutes",<br>      "value": "30", "description": "Interval for background sync jobs",<br>      "updated_at": "2026-02-22T10:00:00Z"<br>    }<br>  ]<br>} |
+| Parameters | <li> `Authorization: Bearer` (header, required) <li> `page` (int, optional, default: 1) → pagination page number <li> `limit` (int, optional, default: 100) → number of settings per page |
+| Output     | <pre>{ <br>  "page": 1,<br>  "limit": 10,<br>  "total": 125,<br>  "settings": [<br>    {<br>      "key": "sync.interval_minutes",<br>      "value": "30", "description": "Interval for background sync jobs",<br>      "updated_at": "2026-02-22T10:00:00Z"<br>    }<br>  ]<br>} |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `500` (internal server error) |
 
 `/api/settings/{key}` (GET)
@@ -334,23 +334,23 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `Authorization: Bearer` (header, required) <li> `key` (query, required) → app setting key |
-| Output     | <pre>{<br>  "key": "sync_interval_minutes",<br>  "value": "30",<br>  "description": "Interval for background sync jobs",<br>  "updated_at": "2026-02-22T10:00:00Z" <br>} |
+| Output     | <pre>{<br>  "message": "",<br>  "setting": {<br>    "key": "sync.interval_minutes",<br>    "value": "30",<br>    "description": "Interval for background sync jobs",<br>    "updated_at": "2026-02-22T10:00:00Z" <br>  }<br>} |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (not found) <br> `500` (internal server error) |
 
 `/api/settings` (POST)
 
 | Aspect     | Details |
 | ---------- | ------- |
-| Parameters | <li> `Authorization: Bearer` (header, required) <li> JSON body: <pre>{<br>  "key": "max_upload_size_mb",<br>  "value": "50",<br>  "description": "Maximum media upload size" <br>} |
-| Output     | <pre>{<br>  "key": "max_upload_size_mb",<br>  "value": "50",<br>  "description": "Maximum media upload size",<br>  "updated_at": "2026-02-23T07:30:00Z"<br>} |
+| Parameters | <li> `Authorization: Bearer` (header, required) <li> JSON body: <pre>{<br>  "key": "upload.max_size_mb",<br>  "value": "50",<br>  "description": "Maximum media upload size"<br>} |
+| Output     | <pre>{<br>  "message": "",<br>  "setting": {<br>    "key": "upload.max_size_mb",<br>    "value": "50",<br>    "description": "Maximum media upload size",<br>    "updated_at": "2026-02-23T07:30:00Z" <br>  }<br>} |
 | HTTP Codes | `201` (created) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `500` (internal server error) |
 
 `/api/settings/{key}` (PUT)
 
 | Aspect     | Details |
 | ---------- | ------- |
-| Parameters | <li> `Authorization: Bearer` (header, required) <li> `key` (query, required) → app setting key <li> JSON Body: <pre>{ "value": "60", "description": "Updated sync interval" } |
-| Output | <pre> { "key": "sync_interval_minutes", "value": "60", "description": "Updated sync interval", "updated_at": "2026-02-23T07:35:00Z" } |
+| Parameters | <li> `Authorization: Bearer` (header, required) <li> `key` (query, required) → app setting key <li> JSON Body: <pre>{<br>  "value": "60",<br>  "description": "Updated sync interval"<br>} |
+| Output | <pre>{<br>  "message": "", "setting": {<br>    "key": "sync_interval_minutes",<br>    "value": "60",<br>    "description": "Updated sync interval",    "updated_at": "2026-02-23T07:35:00Z"<br>  }<br>} |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (not found) <br> `500` (internal server error) |
 
 `/api/settings/{key}` (DELETE)
@@ -358,7 +358,7 @@ erDiagram
 | Aspect     | Details |
 | ---------- | ------- |
 | Parameters | <li> `Authorization: Bearer` (header, required) <li> `key` (query, required) → app setting key |
-| Output     | <pre> { "message": "Setting 'sync_interval_minutes' deleted successfully." } |
+| Output     | <pre>{<br>  "message": "Setting 'sync_interval_minutes' deleted successfully."<br>} |
 | HTTP Codes | `200` (success) <br> `400` (invalid request) <br> `401` (unauthorized) <br> `404` (not found) <br> `500` (internal server error) |
 
 ## Worker Tasks

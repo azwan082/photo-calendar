@@ -50,7 +50,11 @@ export const createApiServer = async (): Promise<TestServer> => {
     settingsPost,
     settingByKeyGet,
     settingByKeyPut,
-    settingByKeyDelete
+    settingByKeyDelete,
+    usersGet,
+    userByIdGet,
+    userByIdPut,
+    userByIdDelete
   ] = await Promise.all([
     import('~/server/api/auth/login.get').then((m) => m.default),
     import('~/server/api/auth/callback.get').then((m) => m.default),
@@ -68,7 +72,11 @@ export const createApiServer = async (): Promise<TestServer> => {
     import('~/server/api/settings/index.post').then((m) => m.default),
     import('~/server/api/settings/[key].get').then((m) => m.default),
     import('~/server/api/settings/[key].put').then((m) => m.default),
-    import('~/server/api/settings/[key].delete').then((m) => m.default)
+    import('~/server/api/settings/[key].delete').then((m) => m.default),
+    import('~/server/api/users/index.get').then((m) => m.default),
+    import('~/server/api/users/[id].get').then((m) => m.default),
+    import('~/server/api/users/[id].put').then((m) => m.default),
+    import('~/server/api/users/[id].delete').then((m) => m.default)
   ])
 
   const app = createApp()
@@ -94,6 +102,11 @@ export const createApiServer = async (): Promise<TestServer> => {
   router.get('/api/settings/:key', eventHandler(settingByKeyGet))
   router.put('/api/settings/:key', eventHandler(settingByKeyPut))
   router.delete('/api/settings/:key', eventHandler(settingByKeyDelete))
+
+  router.get('/api/users', eventHandler(usersGet))
+  router.get('/api/users/:id', eventHandler(userByIdGet))
+  router.put('/api/users/:id', eventHandler(userByIdPut))
+  router.delete('/api/users/:id', eventHandler(userByIdDelete))
 
   app.use(router)
 

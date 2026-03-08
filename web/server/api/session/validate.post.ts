@@ -1,4 +1,5 @@
 import { createError, readBody } from 'h3'
+import type { DataResponse, ValidateResultDto } from '../../types/api'
 import { verifyToken } from '../../utils/token'
 
 interface ValidateBody {
@@ -6,22 +7,10 @@ interface ValidateBody {
   provider?: string
 }
 
-interface ValidateResponse {
-  valid: true
-  claims: {
-    sub: string
-    exp: number
-    provider: string
-    roles: string[]
-    account_id: number
-    type: string
-  }
-}
-
 /**
  * Validates an arbitrary token and returns selected claims when valid.
  */
-export default defineEventHandler(async (event): Promise<ValidateResponse> => {
+export default defineEventHandler(async (event): Promise<DataResponse<ValidateResultDto>> => {
   const body = await readBody<ValidateBody>(event)
 
   if (!body?.token || typeof body.token !== 'string') {
@@ -38,14 +27,10 @@ export default defineEventHandler(async (event): Promise<ValidateResponse> => {
   }
 
   return {
-    valid: true,
-    claims: {
-      sub: claims.sub,
-      exp: claims.exp,
-      provider: claims.provider,
-      roles: claims.roles,
-      account_id: claims.account_id,
-      type: claims.type
+    message: '',
+    data: {
+      valid: true,
+      claims
     }
   }
 })

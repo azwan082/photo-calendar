@@ -1,17 +1,11 @@
 import { createError, getQuery } from 'h3'
+import type { DataResponse, UserInfoDto } from '../../types/api'
 import { requireUserFromToken } from '../../utils/auth'
-
-interface UserInfoResponse {
-  sub: string
-  name: string
-  email: string
-  roles: string[]
-}
 
 /**
  * Returns profile claims for the user represented by the bearer token.
  */
-export default defineEventHandler(async (event): Promise<UserInfoResponse> => {
+export default defineEventHandler(async (event): Promise<DataResponse<UserInfoDto>> => {
   const { claims, user } = await requireUserFromToken(event)
   const query = getQuery(event)
 
@@ -20,9 +14,12 @@ export default defineEventHandler(async (event): Promise<UserInfoResponse> => {
   }
 
   return {
-    sub: String(user.id),
-    name: user.displayName,
-    email: user.email,
-    roles: user.isSuperadmin ? ['admin', 'user'] : ['user']
+    message: '',
+    data: {
+      sub: String(user.id),
+      name: user.username,
+      email: user.email,
+      roles: user.isSuperadmin ? ['admin', 'user'] : ['user']
+    }
   }
 })

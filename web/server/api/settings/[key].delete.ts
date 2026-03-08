@@ -1,19 +1,14 @@
 import { createError, getRouterParam } from 'h3'
+import { AppSettingSchema } from '../../database/entities'
+import type { AppSettingInterface } from '../../database/entities'
+import type { MessageResponse } from '../../types/api'
 import { requireUserFromToken } from '../../utils/auth'
 import { getDataSource } from '../../utils/database'
-
-interface DeleteSettingResponse {
-  message: string
-}
-
-interface AppSettingRecord {
-  key: string
-}
 
 /**
  * Deletes an application setting identified by key.
  */
-export default defineEventHandler(async (event): Promise<DeleteSettingResponse> => {
+export default defineEventHandler(async (event): Promise<MessageResponse> => {
   await requireUserFromToken(event)
 
   const key = getRouterParam(event, 'key')
@@ -22,7 +17,7 @@ export default defineEventHandler(async (event): Promise<DeleteSettingResponse> 
   }
 
   const dataSource = await getDataSource()
-  const repository = dataSource.getRepository<AppSettingRecord>('AppSetting')
+  const repository = dataSource.getRepository('app_setting')
 
   const setting = await repository.findOne({ where: { key } })
   if (!setting) {

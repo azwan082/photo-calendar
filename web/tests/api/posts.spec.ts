@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { DataSource } from 'typeorm'
 import type { FetchError } from 'ofetch'
-import { AppSetting, AuthType, Media, Post, SocialAccount, SyncLog, User } from '~/server/database/entities'
+import { AppSettingSchema, AuthType, MediaSchema, PostSchema, SocialAccountSchema, SyncLogSchema, UserSchema } from '~/server/database/entities'
 import { createApiServer, createMemoryDataSource, setTestDataSource, testDataSource } from './helpers'
 import { seedUserWithAccount } from './fixtures'
 
@@ -16,21 +16,20 @@ describe('Posts API', () => {
   let targetPostId: number
 
   beforeAll(async () => {
-    dataSource = await createMemoryDataSource([User, SocialAccount, Post, Media, SyncLog, AppSetting])
+    dataSource = await createMemoryDataSource([UserSchema, SocialAccountSchema, PostSchema, MediaSchema, SyncLogSchema, AppSettingSchema])
     setTestDataSource(dataSource)
 
     const seeded = await seedUserWithAccount(dataSource, {
       provider: 'google',
       accountId: 'posts-acct',
-      displayName: 'Posts User',
       email: 'posts@example.com',
       username: 'posts-user'
     })
 
     accessToken = seeded.tokens.access_token
 
-    const postRepository = dataSource.getRepository(Post)
-    const mediaRepository = dataSource.getRepository(Media)
+    const postRepository = dataSource.getRepository('post')
+    const mediaRepository = dataSource.getRepository('media')
 
     const post1 = await postRepository.save(
       postRepository.create({
@@ -66,19 +65,19 @@ describe('Posts API', () => {
       })
     )
 
-    const otherUser = await dataSource.getRepository(User).save(
-      dataSource.getRepository(User).create({
+    const otherUser = await dataSource.getRepository('user').save(
+      dataSource.getRepository('user').create({
         email: 'other@example.com',
-        displayName: 'Other User',
         authType: AuthType.SSO,
         username: 'other-user',
         passwordHash: null,
-        isSuperadmin: false
+        isSuperadmin: false,
+        isSyncLocked: false
       })
     )
 
-    const otherAccount = await dataSource.getRepository(SocialAccount).save(
-      dataSource.getRepository(SocialAccount).create({
+    const otherAccount = await dataSource.getRepository('social_account').save(
+      dataSource.getRepository('social_account').create({
         userId: otherUser.id,
         provider: 'google',
         accountId: 'other-account',
@@ -156,10 +155,11 @@ describe('Posts API', () => {
       headers: { Authorization: `Bearer ${accessToken}` }
     })
 
-    expect(post.id).toBe(targetPostId)
-    expect(post.external_post_id).toBe('post-2')
-    expect(post.media.length).toBe(1)
-    expect(post.media[0].media_type).toBe('photo')
+    expect(post.message).toBe('')
+    expect(post.post.id).toBe(targetPostId)
+    expect(post.post.external_post_id).toBe('post-2')
+    expect(post.post.media.length).toBe(1)
+    expect(post.post.media[0].media_type).toBe('photo')
   })
 
   it('GET /api/posts/:id returns 400 for invalid id', async () => {

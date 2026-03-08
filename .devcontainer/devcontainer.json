@@ -29,7 +29,8 @@
         "bierner.markdown-mermaid",
         "openai.chatgpt",
         "google.geminicodeassist",
-        "anthropic.claude-code"
+        "anthropic.claude-code",
+        "alibaba-cloud.tongyi-lingma"
       ]
     }
   }

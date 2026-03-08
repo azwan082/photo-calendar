@@ -4,13 +4,29 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@nuxtjs/tailwindcss'],
   css: ['~/assets/css/main.css'],
+  
+  // Ensure server-only code stays on the server
+  nitro: {
+    esbuild: {
+      options: {
+        target: 'es2022'
+      }
+    }
+  },
+  
   typescript: {
     tsConfig: {
       compilerOptions: {
         experimentalDecorators: true,
-        emitDecoratorMetadata: true,
+        emitDecoratorMetadata: false,
         useDefineForClassFields: false
       }
     }
-  }
+  },
+  
+  // Explicitly mark server-only directories
+  ignore: [
+    '**/server/**/*.test.ts',
+    '**/server/**/*.spec.ts'
+  ]
 })

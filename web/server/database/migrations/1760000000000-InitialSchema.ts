@@ -14,11 +14,11 @@ export class InitialSchema1760000000000 implements MigrationInterface {
       CREATE TABLE IF NOT EXISTS \`user\` (
         \`id\` INT AUTO_INCREMENT PRIMARY KEY,
         \`email\` VARCHAR(255) NOT NULL UNIQUE,
-        \`display_name\` VARCHAR(255) NOT NULL,
         \`auth_type\` ENUM('sso', 'local') NOT NULL,
         \`username\` VARCHAR(120) NOT NULL UNIQUE,
         \`password_hash\` TEXT NULL,
         \`is_superadmin\` BOOLEAN NOT NULL DEFAULT FALSE,
+        \`is_sync_locked\` BOOLEAN NOT NULL DEFAULT FALSE,
         \`created_at\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `)

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { DataSource } from 'typeorm'
 import type { FetchError } from 'ofetch'
-import { AppSetting, Media, Post, SocialAccount, SyncLog, User } from '~/server/database/entities'
+import { AppSettingSchema, MediaSchema, PostSchema, SocialAccountSchema, SyncLogSchema, UserSchema } from '~/server/database/entities'
 import { createApiServer, createMemoryDataSource, setTestDataSource, testDataSource } from './helpers'
 import { seedUserWithAccount } from './fixtures'
 
@@ -15,13 +15,12 @@ describe('Settings API', () => {
   let accessToken: string
 
   beforeAll(async () => {
-    dataSource = await createMemoryDataSource([User, SocialAccount, Post, Media, SyncLog, AppSetting])
+    dataSource = await createMemoryDataSource([UserSchema, SocialAccountSchema, PostSchema, MediaSchema, SyncLogSchema, AppSettingSchema])
     setTestDataSource(dataSource)
 
     const seeded = await seedUserWithAccount(dataSource, {
       provider: 'google',
       accountId: 'settings-acct',
-      displayName: 'Settings User',
       email: 'settings@example.com',
       username: 'settings-user'
     })
@@ -44,6 +43,9 @@ describe('Settings API', () => {
       headers: { Authorization: `Bearer ${accessToken}` }
     })
 
+    expect(result.page).toBe(1)
+    expect(result.limit).toBe(100)
+    expect(result.total).toBe(0)
     expect(result.settings).toEqual([])
   })
 
@@ -58,9 +60,10 @@ describe('Settings API', () => {
       }
     })
 
-    expect(created.key).toBe('sync_interval_minutes')
-    expect(created.value).toBe('30')
-    expect(created.description).toBe('Interval for background sync jobs')
+    expect(created.message).toBe('')
+    expect(created.setting.key).toBe('sync_interval_minutes')
+    expect(created.setting.value).toBe('30')
+    expect(created.setting.description).toBe('Interval for background sync jobs')
   })
 
   it('POST /api/settings rejects duplicate key', async () => {
@@ -81,8 +84,9 @@ describe('Settings API', () => {
       headers: { Authorization: `Bearer ${accessToken}` }
     })
 
-    expect(setting.key).toBe('sync_interval_minutes')
-    expect(setting.value).toBe('30')
+    expect(setting.message).toBe('')
+    expect(setting.setting.key).toBe('sync_interval_minutes')
+    expect(setting.setting.value).toBe('30')
   })
 
   it('PUT /api/settings/:key updates value and description', async () => {
@@ -95,8 +99,9 @@ describe('Settings API', () => {
       }
     })
 
-    expect(updated.value).toBe('60')
-    expect(updated.description).toBe('Updated interval')
+    expect(updated.message).toBe('')
+    expect(updated.setting.value).toBe('60')
+    expect(updated.setting.description).toBe('Updated interval')
   })
 
   it('DELETE /api/settings/:key deletes setting', async () => {
