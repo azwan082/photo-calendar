@@ -369,6 +369,7 @@ erDiagram
   - scheduler: handle scheduling of tasks
   - runner: run the task
 - both subcomponent use same code base inside 'worker' folder, and started using specific flag
+- don't implement any database connection here, worker interacts with app's database via rest api to 'web' backend, and backend trigger / schedule task via message broker
 
 ### Content Syncer
 
@@ -379,3 +380,10 @@ erDiagram
   - perform request to social media API & update photos data via REST API to web component
   - auto retry with graceful backoff in case of failure, retry max 3 times
   - when finish, regardless success or failed, unlock users
+- social media API
+  - create an interface class for each social media API
+  - primary functionality is to fetch user info & photos for a given user
+  - return list of photos in uniform format
+  - for this stage, create classes for these social media:
+    - Daun API (https://daun.me/api/v2/docs)
+    - Instagram API (https://www.instagram.com/developer/endpoints/)
